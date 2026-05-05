@@ -1,5 +1,7 @@
 # Релизные артефакты: статический web (dist/) + нативные сборки через EAS (облако Expo).
 # Требуются секреты репозитория — см. README раздел «CI/CD».
+# iOS: первый раз настройте сертификаты интерактивно (`eas credentials` / локальный eas build -p ios),
+# иначе job eas-ios в CI упадёт на «Distribution Certificate not validated».
 name: Release
 
 on:
@@ -50,8 +52,7 @@ jobs:
           path: dist
           if-no-files-found: error
 
-  # iOS + Android собираются на серверах Expo (нужен EXPO_TOKEN и один раз — привязка проекта: npx eas init).
-  eas-native:
+  eas-android:
     needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -63,15 +64,43 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: EAS Build (Android + iOS)
+      - name: EAS Build (Android)
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_YANDEX_MAPS_JS_API_KEY: ${{ secrets.EXPO_PUBLIC_YANDEX_MAPS_JS_API_KEY }}
+          EAS_BUILD_NO_EXPO_GO_WARNING: 'true'
         run: |
           if [ -z "$EXPO_TOKEN" ]; then
-            echo "::error::Задайте секрет EXPO_TOKEN (expo.dev → Access Tokens). Нативные сборки пропущены."
+            echo "::error::Задайте секрет EXPO_TOKEN (expo.dev → Access Tokens)."
             exit 1
           fi
-          npx eas build --platform all --profile production --non-interactive --no-wait
+          npx eas build --platform android --profile production --non-interactive --no-wait
+
+  eas-ios:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+
+      - name: EAS Build (iOS)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_YANDEX_MAPS_JS_API_KEY: ${{ secrets.EXPO_PUBLIC_YANDEX_MAPS_JS_API_KEY }}
+          EAS_BUILD_NO_EXPO_GO_WARNING: 'true'
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Задайте секрет EXPO_TOKEN (expo.dev → Access Tokens)."
+            exit 1
+          fi
+          npx eas build --platform ios --profile production --non-interactive --no-wait

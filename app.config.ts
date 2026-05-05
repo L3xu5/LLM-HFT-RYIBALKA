@@ -13,6 +13,8 @@ const config: ExpoConfig = {
     supportsTablet: false,
     bundleIdentifier: 'com.rybalka.app',
     infoPlist: {
+      /** Только стандартное HTTPS/TLS — упрощает ответ в App Store Connect (encryption export). */
+      ITSAppUsesNonExemptEncryption: false,
       NSLocationWhenInUseUsageDescription:
         'Нужно для показа вашего положения на карте и подбора ближайших мест рыбалки.',
       NSCameraUsageDescription: 'Нужно, чтобы сфотографировать улов.',

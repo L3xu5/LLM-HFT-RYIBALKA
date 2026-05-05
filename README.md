@@ -208,12 +208,14 @@ npm run llm:deploy
 | Файл | Когда запускается | Что делает |
 |------|-------------------|------------|
 | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Push и PR в `main` / `master`, при желании **Run workflow** вручную | `npm ci` → typecheck → тесты → `expo lint` |
-| [`.github/workflows/release.yml`](.github/workflows/release.yml) | Push тега `v*` или **Run workflow** вручную | Те же проверки + **lint** → **артефакт web** (`dist/`) → **EAS Build** Android + iOS (`npx eas`, профиль `production` в [`eas.json`](eas.json)) |
+| [`.github/workflows/release.yml`](.github/workflows/release.yml) | Push тега `v*` или **Run workflow** вручную | Те же проверки + **lint** → **web-dist** → отдельно **EAS Android** и **EAS iOS** (`npx eas`, профиль `production` в [`eas.json`](eas.json)) |
 | [`.github/workflows/deploy-recommend-spot.yml`](.github/workflows/deploy-recommend-spot.yml) | Только вручную (**workflow_dispatch**) | Деплой Edge Function `recommend-spot` в Supabase (нужен секрет `SUPABASE_ACCESS_TOKEN`) |
 
 **Web:** в Job «build-web» каталог `dist` загружается как artifact **web-dist** (Artifacts на странице запуска workflow).
 
 **Android и iOS:** сборка идёт в **облаке Expo** ([EAS Build](https://docs.expo.dev/build/introduction/)), не на раннере GitHub — так проще с подписями и Xcode. Нужен аккаунт Expo и один раз локально выполнить **`npx eas init`** (появится `projectId` в `app.config`), затем в [expo.dev](https://expo.dev) настроить учётные данные для iOS/Android при первом продакшен-сборке.
+
+**Первый iOS-build в CI:** Apple Distribution Certificate и профиль нужно **один раз** создать интерактивно (неинтерактивный `eas build` на GitHub не может «нажать» диалоги Apple). Локально на машине с аккаунтом разработчика выполните, например: `npx eas credentials -p ios` или `npx eas build --platform ios --profile production` и следуйте подсказкам — после этого те же учётные данные подхватятся на EAS и job **eas-ios** в Actions сможет проходить. Пока iOS не настроен, в workflow job **eas-ios** помечен `continue-on-error` (не блокирует Android и web). Статус сервисов: [status.expo.dev](https://status.expo.dev/).
 
 ### Секреты GitHub (Settings → Secrets and variables → Actions)
 
