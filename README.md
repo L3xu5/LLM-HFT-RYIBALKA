@@ -239,6 +239,33 @@ npm run llm:deploy
 
 До этого один раз локально: `npx eas credentials -p ios` или `npx eas build --platform ios --profile production` и пройти мастер Apple — затем можно включить CI для iOS. Статус EAS: [status.expo.dev](https://status.expo.dev/).
 
+### Настройка Apple credentials для iOS (EAS)
+
+1. **Apple Developer Program** — активная подписка на [developer.apple.com/programs](https://developer.apple.com/programs/enroll/) (учётная запись разработчика Apple).
+
+2. **Bundle ID** — в проекте задан в [`app.config.ts`](app.config.ts) (`ios.bundleIdentifier`, сейчас `com.rybalka.app`). В [Certificates, Identifiers & Profiles](https://developer.apple.com/account/resources/identifiers/list) создайте **Identifier** типа App IDs с **точно таким же** bundle id (или используйте уже существующий).
+
+3. **Интерактивно на своей машине** (нужны логин в Expo и Apple ID с **двухфакторной аутентификацией**):
+
+   ```bash
+   npx eas login
+   npx eas credentials -p ios
+   ```
+
+   Либо первая сборка — мастер сам запросит сертификаты и профиль:
+
+   ```bash
+   npx eas build --platform ios --profile production
+   ```
+
+   Рекомендуется разрешить Expo **управлять credentials** («Let Expo handle» / аналог): тогда **Distribution Certificate** и **Provisioning Profile** сохраняются на стороне Expo, и **неинтерактивный** `eas build` из GitHub сможет их подхватить после того, как они созданы.
+
+4. Проверка: [expo.dev](https://expo.dev) → проект **Рыбалка / rybalka** → **Credentials** — должны быть записи для iOS.
+
+5. Включите job **eas-ios** в CI: переменная **`EAS_IOS_ENABLED=true`** или ручной **Release** с галкой **`build_ios`**.
+
+Документация Expo: [App credentials](https://docs.expo.dev/app-signing/app-credentials/), [iOS credentials](https://docs.expo.dev/build-reference/ios-credentials/).
+
 ### Секреты GitHub (Settings → Secrets and variables → Actions)
 
 | Секрет | Обязателен для |
