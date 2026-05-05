@@ -203,12 +203,13 @@ npm run llm:deploy
 
 ## CI/CD (GitHub Actions)
 
-В репозитории два workflow:
+В репозитории три workflow:
 
 | Файл | Когда запускается | Что делает |
 |------|-------------------|------------|
-| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Push и PR в `main` / `master` | `npm ci` → typecheck → тесты → `expo lint` |
-| [`.github/workflows/release.yml`](.github/workflows/release.yml) | Push тега `v*` или **Run workflow** вручную | Те же проверки → **артефакт web** (`dist/`) → **EAS Build** Android + iOS (профиль `production` в [`eas.json`](eas.json)) |
+| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Push и PR в `main` / `master`, при желании **Run workflow** вручную | `npm ci` → typecheck → тесты → `expo lint` |
+| [`.github/workflows/release.yml`](.github/workflows/release.yml) | Push тега `v*` или **Run workflow** вручную | Те же проверки + **lint** → **артефакт web** (`dist/`) → **EAS Build** Android + iOS (`npx eas`, профиль `production` в [`eas.json`](eas.json)) |
+| [`.github/workflows/deploy-recommend-spot.yml`](.github/workflows/deploy-recommend-spot.yml) | Только вручную (**workflow_dispatch**) | Деплой Edge Function `recommend-spot` в Supabase (нужен секрет `SUPABASE_ACCESS_TOKEN`) |
 
 **Web:** в Job «build-web» каталог `dist` загружается как artifact **web-dist** (Artifacts на странице запуска workflow).
 
@@ -222,6 +223,7 @@ npm run llm:deploy
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Web и EAS |
 | `EXPO_PUBLIC_YANDEX_MAPS_JS_API_KEY` | Web и EAS |
 | `EXPO_TOKEN` | Только нативные сборки EAS — токен доступа в настройках аккаунта на [expo.dev](https://expo.dev) (*Access Tokens*) |
+| `SUPABASE_ACCESS_TOKEN` | Только workflow **Deploy recommend-spot** ([личный токен](https://supabase.com/dashboard/account/tokens)) |
 
 Без `EXPO_TOKEN` workflow **release** упадёт на шаге EAS — при необходимости временно отключите job `eas-native` или добавьте токен.
 
