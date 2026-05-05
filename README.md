@@ -233,7 +233,11 @@ npm run llm:deploy
 
 **Android и iOS:** сборка идёт в **облаке Expo** ([EAS Build](https://docs.expo.dev/build/introduction/)), не на раннере GitHub — так проще с подписями и Xcode. Нужен аккаунт Expo и один раз локально выполнить **`npx eas init`** (появится `projectId` в `app.config`), затем в [expo.dev](https://expo.dev) настроить учётные данные для iOS/Android при первом продакшен-сборке.
 
-**Первый iOS-build в CI:** Apple Distribution Certificate и профиль нужно **один раз** создать интерактивно (неинтерактивный `eas build` на GitHub не может «нажать» диалоги Apple). Локально на машине с аккаунтом разработчика выполните, например: `npx eas credentials -p ios` или `npx eas build --platform ios --profile production` и следуйте подсказкам — после этого те же учётные данные подхватятся на EAS и job **eas-ios** в Actions сможет проходить. Пока iOS не настроен, в workflow job **eas-ios** помечен `continue-on-error` (не блокирует Android и web). Статус сервисов: [status.expo.dev](https://status.expo.dev/).
+**iOS в GitHub Actions по умолчанию отключён:** без предварительной настройки Apple credentials на Expo неинтерактивный `eas build` падает с *Distribution Certificate is not validated*. Чтобы **не получать красный лог** при каждом релизе, job **eas-ios** запускается только если:
+- в репозитории задана переменная **`EAS_IOS_ENABLED`** = `true` (*Settings → Secrets and variables → Actions → Variables*), **или**
+- workflow **Release** запущен вручную с галкой **`build_ios`**.
+
+До этого один раз локально: `npx eas credentials -p ios` или `npx eas build --platform ios --profile production` и пройти мастер Apple — затем можно включить CI для iOS. Статус EAS: [status.expo.dev](https://status.expo.dev/).
 
 ### Секреты GitHub (Settings → Secrets and variables → Actions)
 
@@ -246,7 +250,7 @@ npm run llm:deploy
 | `SUPABASE_ACCESS_TOKEN` | Только workflow **Deploy recommend-spot** ([личный токен](https://supabase.com/dashboard/account/tokens)) |
 | `YANDEX_STORAGE_BUCKET`, `YANDEX_STORAGE_ACCESS_KEY_ID`, `YANDEX_STORAGE_SECRET_ACCESS_KEY` | Опционально: выгрузка web в **Object Storage** (см. выше) |
 
-Без `EXPO_TOKEN` job **eas-android** / **eas-ios** в **release** завершатся ошибкой на шаге EAS — добавьте токен или отключите эти job в workflow.
+Без `EXPO_TOKEN` job **eas-android** (и **eas-ios**, если включён) завершатся ошибкой на шаге EAS — добавьте токен. Job **eas-ios** при теге не запускается, пока не заданы **`EAS_IOS_ENABLED`** или ручной запуск с **`build_ios`**.
 
 ### Один раз: проект EAS и `projectId`
 

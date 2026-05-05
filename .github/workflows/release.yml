@@ -1,11 +1,16 @@
 # Релизные артефакты: статический web (dist/) + нативные сборки через EAS (облако Expo).
 # Требуются секреты репозитория — см. README раздел «CI/CD».
-# iOS: первый раз настройте сертификаты интерактивно (`eas credentials` / локальный eas build -p ios),
-# иначе job eas-ios в CI упадёт на «Distribution Certificate not validated».
+# iOS в CI по умолчанию выключен (нет интерактива для Apple).
+# Включение: переменная репозитория EAS_IOS_ENABLED=true или ручной запуск с галкой build_ios.
 name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      build_ios:
+        description: Запустить EAS build для iOS (нужны credentials на expo.dev)
+        type: boolean
+        default: false
   push:
     tags:
       - 'v*'
@@ -114,9 +119,9 @@ jobs:
 
   eas-ios:
     needs: quality
+    if: ${{ vars.EAS_IOS_ENABLED == 'true' || (github.event_name == 'workflow_dispatch' && inputs.build_ios == true) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
