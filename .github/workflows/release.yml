@@ -1,0 +1,79 @@
+# Релизные артефакты: статический web (dist/) + нативные сборки через EAS (облако Expo).
+# Требуются секреты репозитория — см. README раздел «CI/CD».
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  build-web:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Export web (static bundle)
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_YANDEX_MAPS_JS_API_KEY: ${{ secrets.EXPO_PUBLIC_YANDEX_MAPS_JS_API_KEY }}
+        run: npm run build:web
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+          if-no-files-found: error
+
+  # iOS + Android собираются на серверах Expo (нужен EXPO_TOKEN и один раз — привязка проекта: npx eas init).
+  eas-native:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: EAS Build (Android + iOS)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_YANDEX_MAPS_JS_API_KEY: ${{ secrets.EXPO_PUBLIC_YANDEX_MAPS_JS_API_KEY }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Задайте секрет EXPO_TOKEN (expo.dev → Access Tokens). Нативные сборки пропущены."
+            exit 1
+          fi
+          eas build --platform all --profile production --non-interactive --no-wait
