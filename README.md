@@ -208,10 +208,28 @@ npm run llm:deploy
 | Файл | Когда запускается | Что делает |
 |------|-------------------|------------|
 | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Push и PR в `main` / `master`, при желании **Run workflow** вручную | `npm ci` → typecheck → тесты → `expo lint` |
-| [`.github/workflows/release.yml`](.github/workflows/release.yml) | Push тега `v*` или **Run workflow** вручную | Те же проверки + **lint** → **web-dist** → отдельно **EAS Android** и **EAS iOS** (`npx eas`, профиль `production` в [`eas.json`](eas.json)) |
+| [`.github/workflows/release.yml`](.github/workflows/release.yml) | Push тега `v*` или **Run workflow** вручную | Те же проверки + **lint** → **web-dist** → опционально **Object Storage** (Яндекс.Облако) → **EAS Android** / **EAS iOS** (`npx eas`, профиль `production` в [`eas.json`](eas.json)) |
 | [`.github/workflows/deploy-recommend-spot.yml`](.github/workflows/deploy-recommend-spot.yml) | Только вручную (**workflow_dispatch**) | Деплой Edge Function `recommend-spot` в Supabase (нужен секрет `SUPABASE_ACCESS_TOKEN`) |
 
-**Web:** в Job «build-web» каталог `dist` загружается как artifact **web-dist** (Artifacts на странице запуска workflow).
+**Web:** в Job «build-web» каталог `dist` загружается как artifact **web-dist** (Artifacts на странице запуска workflow). Если заданы секреты Object Storage (ниже), job **deploy-web-yandex** выкладывает `dist/` в бакет Яндекс.Облака через `aws s3 sync` и [`--endpoint-url` для Storage](https://cloud.yandex.ru/docs/storage/tools/aws-cli).
+
+### Веб в Yandex Object Storage (опционально)
+
+1. [Консоль](https://console.cloud.yandex.ru/) → **Object Storage** → создайте **бакет** (например `rybalka-web`), регион **ru-central1**.
+2. В бакете включите [**хостинг**](https://cloud.yandex.ru/docs/storage/concepts/hosting): для SPA укажите **главную** и **страницу ошибки** `index.html`, чтобы работали маршруты Expo Router.
+3. Откройте чтение объектов с сайта (публичный доступ / политика бакета — по инструкции для статического сайта).
+4. **Сервисный аккаунт** с ролью вроде `storage.editor` на каталог, [**статический ключ доступа**](https://cloud.yandex.ru/docs/iam/operations/sa/create-access-key).
+5. В **GitHub → Secrets** добавьте:
+
+| Секрет | Значение |
+|--------|----------|
+| `YANDEX_STORAGE_BUCKET` | Имя бакета |
+| `YANDEX_STORAGE_ACCESS_KEY_ID` | Идентификатор ключа |
+| `YANDEX_STORAGE_SECRET_ACCESS_KEY` | Секрет ключа |
+
+После следующего **Release** файлы из `dist/` окажутся в бакете. URL сайта — в консоли Storage (хостинг) или через **Cloud CDN** при необходимости.
+
+Если секреты не заданы, job **deploy-web-yandex** завершается с **notice** и не ломает workflow.
 
 **Android и iOS:** сборка идёт в **облаке Expo** ([EAS Build](https://docs.expo.dev/build/introduction/)), не на раннере GitHub — так проще с подписями и Xcode. Нужен аккаунт Expo и один раз локально выполнить **`npx eas init`** (появится `projectId` в `app.config`), затем в [expo.dev](https://expo.dev) настроить учётные данные для iOS/Android при первом продакшен-сборке.
 
@@ -226,8 +244,9 @@ npm run llm:deploy
 | `EXPO_PUBLIC_YANDEX_MAPS_JS_API_KEY` | Web и EAS |
 | `EXPO_TOKEN` | Только нативные сборки EAS — токен доступа в настройках аккаунта на [expo.dev](https://expo.dev) (*Access Tokens*) |
 | `SUPABASE_ACCESS_TOKEN` | Только workflow **Deploy recommend-spot** ([личный токен](https://supabase.com/dashboard/account/tokens)) |
+| `YANDEX_STORAGE_BUCKET`, `YANDEX_STORAGE_ACCESS_KEY_ID`, `YANDEX_STORAGE_SECRET_ACCESS_KEY` | Опционально: выгрузка web в **Object Storage** (см. выше) |
 
-Без `EXPO_TOKEN` workflow **release** упадёт на шаге EAS — при необходимости временно отключите job `eas-native` или добавьте токен.
+Без `EXPO_TOKEN` job **eas-android** / **eas-ios** в **release** завершатся ошибкой на шаге EAS — добавьте токен или отключите эти job в workflow.
 
 ### Один раз: проект EAS и `projectId`
 

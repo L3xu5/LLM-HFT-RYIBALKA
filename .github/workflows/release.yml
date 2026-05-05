@@ -52,6 +52,40 @@ jobs:
           path: dist
           if-no-files-found: error
 
+  # Статика из dist/ → бакет Object Storage (AWS CLI + endpoint Yandex). Секреты — см. README.
+  deploy-web-yandex:
+    needs: build-web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Download web artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: web-dist
+          path: dist
+
+      - name: Install AWS CLI
+        run: |
+          curl -sS "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
+          unzip -q awscliv2.zip
+          sudo ./aws/install --update
+
+      - name: Sync to Yandex Object Storage
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.YANDEX_STORAGE_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.YANDEX_STORAGE_SECRET_ACCESS_KEY }}
+          YANDEX_BUCKET: ${{ secrets.YANDEX_STORAGE_BUCKET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${YANDEX_BUCKET:-}" ] || [ -z "${AWS_ACCESS_KEY_ID:-}" ] || [ -z "${AWS_SECRET_ACCESS_KEY:-}" ]; then
+            echo "::notice::Не заданы YANDEX_STORAGE_BUCKET и/или ключи — выгрузка web в Object Storage пропущена (см. README)."
+            exit 0
+          fi
+          aws s3 sync dist/ "s3://${YANDEX_BUCKET}/" \
+            --endpoint-url https://storage.yandexcloud.net \
+            --region ru-central1 \
+            --delete
+
   eas-android:
     needs: quality
     runs-on: ubuntu-latest
