@@ -209,6 +209,25 @@ export async function uploadCatchPhotos(catchId: string, uris: string[]): Promis
   return inserted;
 }
 
+export async function deleteCatchPhoto(photoId: string): Promise<void> {
+  const { data: photo, error: photoErr } = await supabase
+    .from('catch_photos')
+    .select('id, storage_path')
+    .eq('id', photoId)
+    .maybeSingle();
+  if (photoErr) throw explainMutationError(photoErr);
+  if (!photo) return;
+
+  const path = photo.storage_path?.trim();
+  if (path) {
+    const { error: storageErr } = await supabase.storage.from('catch-photos').remove([path]);
+    if (storageErr) throw explainMutationError(storageErr);
+  }
+
+  const { error: deleteErr } = await supabase.from('catch_photos').delete().eq('id', photoId);
+  if (deleteErr) throw explainMutationError(deleteErr);
+}
+
 export function publicPhotoUrl(storagePath: string): string {
   const { data } = supabase.storage.from('catch-photos').getPublicUrl(storagePath);
   return data.publicUrl;

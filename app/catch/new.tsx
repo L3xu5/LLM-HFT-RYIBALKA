@@ -186,7 +186,7 @@ export default function NewCatchScreen() {
           <View style={styles.photoGrid}>
             {photos.map((uri) => (
               <Pressable key={uri} onPress={() => removePhoto(uri)} style={styles.photoWrap}>
-                <Image source={{ uri }} style={styles.photo} />
+                <Image source={{ uri }} style={styles.photo} resizeMode="contain" />
                 <Text style={styles.photoHint}>Tap to remove</Text>
               </Pressable>
             ))}

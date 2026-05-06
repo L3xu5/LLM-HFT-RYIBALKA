@@ -5,11 +5,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import {
+  deleteCatchPhoto,
   deleteCatch,
   fetchCatchById,
   resolveCatchPhotoPublicUrls,
@@ -32,6 +33,7 @@ export default function CatchDetailScreen() {
 
   const [editing, setEditing] = useState(false);
   const [newPhotos, setNewPhotos] = useState<string[]>([]);
+  const [photoIdsToDelete, setPhotoIdsToDelete] = useState<string[]>([]);
   /** Signed URLs override public URLs when available. */
   const [signedPhotoUrls, setSignedPhotoUrls] = useState<Record<string, string>>({});
 
@@ -114,6 +116,10 @@ export default function CatchDetailScreen() {
         is_public: values.is_public,
       });
 
+      if (photoIdsToDelete.length > 0) {
+        await Promise.all(photoIdsToDelete.map((photoId) => deleteCatchPhoto(photoId)));
+      }
+
       if (newPhotos.length > 0) {
         await uploadCatchPhotos(id, newPhotos);
       }
@@ -122,6 +128,7 @@ export default function CatchDetailScreen() {
       await qc.invalidateQueries({ queryKey: queryKeys.catch(id) });
       await qc.invalidateQueries({ queryKey: queryKeys.catches });
       setNewPhotos([]);
+      setPhotoIdsToDelete([]);
       setEditing(false);
       Alert.alert('Saved');
     },
@@ -149,7 +156,42 @@ export default function CatchDetailScreen() {
     setNewPhotos((prev) => [...prev, ...res.assets.map((a) => a.uri)].slice(0, 8));
   }
 
+  function togglePhotoDelete(photoId: string) {
+    setPhotoIdsToDelete((prev) =>
+      prev.includes(photoId) ? prev.filter((id) => id !== photoId) : [...prev, photoId],
+    );
+  }
+
+  function removeNewPhoto(uri: string) {
+    setNewPhotos((prev) => prev.filter((u) => u !== uri));
+  }
+
+  function cancelEdit() {
+    const row = query.data;
+    if (row) {
+      reset({
+        fish_species: row.fish_species ?? '',
+        weight_g: row.weight_g != null ? String(row.weight_g) : '',
+        bait: row.bait ?? '',
+        gear: row.gear ?? '',
+        notes: row.notes ?? '',
+        is_public: row.is_public,
+      });
+    }
+    setPhotoIdsToDelete([]);
+    setNewPhotos([]);
+    setEditing(false);
+  }
+
   function confirmDelete() {
+    if (Platform.OS === 'web') {
+      const ok =
+        typeof window !== 'undefined' &&
+        window.confirm('Delete catch?\n\nThis action cannot be undone.');
+      if (ok) deleteMutation.mutate();
+      return;
+    }
+
     Alert.alert('Delete catch?', 'This action cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate() },
@@ -174,6 +216,7 @@ export default function CatchDetailScreen() {
   }
 
   const c = query.data;
+  const visiblePhotos = c.catch_photos.filter((p) => !photoIdsToDelete.includes(p.id));
 
   return (
     <Screen edges={['bottom']} padded={false}>
@@ -261,22 +304,40 @@ export default function CatchDetailScreen() {
         )}
 
         <View style={styles.gallery}>
-          {c.catch_photos.map((p) => {
+          {visiblePhotos.map((p) => {
             const uri = signedPhotoUrls[p.id] ?? publicPhotoUrls[p.id];
             return uri ? (
-              <Image
-                key={p.id}
-                source={{ uri }}
-                style={styles.photo}
-                contentFit="cover"
-                recyclingKey={p.id}
-              />
+              <View key={p.id} style={styles.photoWrap}>
+                <Image source={{ uri }} style={styles.photo} contentFit="contain" recyclingKey={p.id} />
+                {editing ? (
+                  <Pressable
+                    style={styles.removePhotoBtn}
+                    onPress={() => togglePhotoDelete(p.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove existing photo"
+                  >
+                    <Text style={styles.removePhotoBtnText}>Remove</Text>
+                  </Pressable>
+                ) : null}
+              </View>
             ) : (
               <View key={p.id} style={[styles.photo, styles.photoPending]} />
             );
           })}
           {newPhotos.map((uri) => (
-            <Image key={uri} source={{ uri }} style={styles.photoNew} contentFit="cover" />
+            <View key={uri} style={styles.photoWrap}>
+              <Image source={{ uri }} style={styles.photoNew} contentFit="contain" />
+              {editing ? (
+                <Pressable
+                  style={styles.removePhotoBtn}
+                  onPress={() => removeNewPhoto(uri)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove new photo"
+                >
+                  <Text style={styles.removePhotoBtnText}>Remove</Text>
+                </Pressable>
+              ) : null}
+            </View>
           ))}
         </View>
 
@@ -294,7 +355,7 @@ export default function CatchDetailScreen() {
                   loading={saveMutation.isPending}
                   onPress={handleSubmit((v) => saveMutation.mutateAsync(v))}
                 />
-                <PrimaryButton variant="ghost" title="Cancel" onPress={() => setEditing(false)} />
+                <PrimaryButton variant="ghost" title="Cancel" onPress={cancelEdit} />
               </>
             )}
           </View>
@@ -339,8 +400,19 @@ const styles = StyleSheet.create({
   },
   switchLabel: { flex: 1, color: colors.text, fontWeight: '700' },
   gallery: { gap: spacing.md },
+  photoWrap: { position: 'relative' },
   photo: { width: '100%', height: 220, borderRadius: 12, backgroundColor: colors.surface },
   photoPending: { backgroundColor: colors.surfaceAlt },
   photoNew: { width: '100%', height: 220, borderRadius: 12, backgroundColor: colors.surfaceAlt },
+  removePhotoBtn: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 999,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  removePhotoBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
   actions: { gap: spacing.md, marginTop: spacing.md },
 });
