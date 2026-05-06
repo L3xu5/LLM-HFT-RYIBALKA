@@ -14,7 +14,7 @@
 export const YMAPS_DEFAULT_UI_THEME_VERSION = '0.0.24';
 
 export function getYandexMapsApiScriptUrl(apiKey: string): string {
-  return `https://api-maps.yandex.ru/v3/?apikey=${encodeURIComponent(apiKey)}&lang=ru_RU`;
+  return `https://api-maps.yandex.ru/v3/?apikey=${encodeURIComponent(apiKey)}&lang=en_US`;
 }
 
 export type BuildYandexMapHtmlOptions = {
@@ -38,7 +38,7 @@ export function buildYandexMapHtml(apiKey: string, options?: BuildYandexMapHtmlO
   const useParentFlagJs = useParentWindowApi ? 'true' : 'false';
 
   return `<!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
