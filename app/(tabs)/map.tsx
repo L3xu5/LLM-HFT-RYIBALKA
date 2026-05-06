@@ -85,6 +85,8 @@ export default function MapScreen() {
       let lat: number;
       let lng: number;
       let zoom = 12;
+      let viewportWidthPx: number | undefined;
+      let viewportHeightPx: number | undefined;
 
       try {
         const vp = await mapRef.current?.getViewport();
@@ -94,6 +96,8 @@ export default function MapScreen() {
         lat = vp.lat;
         lng = vp.lng;
         zoom = Number.isFinite(vp.zoom) ? vp.zoom : 12;
+        viewportWidthPx = Number.isFinite(vp.widthPx) ? vp.widthPx : undefined;
+        viewportHeightPx = Number.isFinite(vp.heightPx) ? vp.heightPx : undefined;
       } catch {
         const perm = await Location.requestForegroundPermissionsAsync();
         if (!perm.granted) {
@@ -109,16 +113,26 @@ export default function MapScreen() {
         zoom = 11;
       }
 
-      const radiusKm = radiusKmForMapViewport(zoom, lat);
+      const radiusFromViewport = radiusKmForMapViewport(
+        zoom,
+        lat,
+        viewportWidthPx,
+        viewportHeightPx,
+      );
       const result = await requestRecommendation({
         lat,
         lng,
-        radiusKm,
+        radiusKm: radiusFromViewport,
       });
       setRec(result);
       setRecOpen(true);
     } catch (e) {
-      Alert.alert('Error', e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(`Recommendation request failed: ${msg}`);
+      } else {
+        Alert.alert('Error', msg);
+      }
     } finally {
       setLoadingRec(false);
     }
@@ -158,7 +172,7 @@ export default function MapScreen() {
         </View>
       ) : null}
 
-      <View style={styles.zoomStack} pointerEvents="box-none">
+      <View style={[styles.zoomStack, styles.pointerBoxNone]}>
         <Pressable
           style={styles.zoomBtn}
           onPress={() => mapRef.current?.adjustZoom(1)}
@@ -181,7 +195,7 @@ export default function MapScreen() {
         <Text style={styles.addFabText}>＋</Text>
       </Pressable>
 
-      <View style={styles.redWrap} pointerEvents="box-none">
+      <View style={[styles.redWrap, styles.pointerBoxNone]}>
         <RedRecommendButton loading={loadingRec} onPress={handleRecommend} />
       </View>
 
@@ -190,6 +204,12 @@ export default function MapScreen() {
           <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.sheetTitle}>Where to go?</Text>
             <Text style={styles.sheetBody}>{rec?.reason ?? ''}</Text>
+            {rec?.sources?.length ? (
+              <Text style={styles.sheetMeta}>Sources: {rec.sources.join(', ')}</Text>
+            ) : null}
+            {rec?.nearby_evidence?.length ? (
+              <Text style={styles.sheetMeta}>Evidence: {rec.nearby_evidence.join(' | ')}</Text>
+            ) : null}
             {rec?.suggested_bait ? (
               <Text style={styles.sheetMeta}>Bait: {rec.suggested_bait}</Text>
             ) : null}
@@ -278,6 +298,9 @@ const styles = StyleSheet.create({
     bottom: spacing.lg,
     zIndex: 100,
     elevation: 100,
+  },
+  pointerBoxNone: {
+    pointerEvents: 'box-none',
   },
   modalBackdrop: {
     flex: 1,

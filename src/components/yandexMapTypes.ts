@@ -13,6 +13,9 @@ export type MapViewport = {
   lat: number;
   lng: number;
   zoom: number;
+  /** Current map container size in pixels used for radius estimation. */
+  widthPx?: number;
+  heightPx?: number;
 };
 
 export type YandexMapHandle = {

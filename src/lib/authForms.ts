@@ -29,6 +29,15 @@ export const signUpSchema = z.object({
     }),
   email: emailField,
   password: passwordField,
+  confirmPassword: z.string().min(1, 'Repeat password'),
+}).superRefine((values, ctx) => {
+  if (values.password !== values.confirmPassword) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['confirmPassword'],
+      message: 'Passwords do not match',
+    });
+  }
 });
 
 export type SignInValues = z.infer<typeof signInSchema>;

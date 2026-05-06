@@ -12,9 +12,10 @@
  */
 /** Marker package version for registerCdn + jsdelivr (see npm @yandex/ymaps3-default-ui-theme). */
 export const YMAPS_DEFAULT_UI_THEME_VERSION = '0.0.24';
+const YMAPS_LANG = 'en_US';
 
 export function getYandexMapsApiScriptUrl(apiKey: string): string {
-  return `https://api-maps.yandex.ru/v3/?apikey=${encodeURIComponent(apiKey)}&lang=en_US`;
+  return `https://api-maps.yandex.ru/v3/?apikey=${encodeURIComponent(apiKey)}&lang=${YMAPS_LANG}`;
 }
 
 export type BuildYandexMapHtmlOptions = {
@@ -36,6 +37,7 @@ export function buildYandexMapHtml(apiKey: string, options?: BuildYandexMapHtmlO
   );
   const useParentWindowApi = Boolean(options?.useParentWindowApi);
   const useParentFlagJs = useParentWindowApi ? 'true' : 'false';
+  const mapLangJs = JSON.stringify(YMAPS_LANG);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -69,6 +71,7 @@ export function buildYandexMapHtml(apiKey: string, options?: BuildYandexMapHtmlO
   <script>
     (function () {
       var USE_PARENT_WINDOW_API = ${useParentFlagJs};
+      var MAP_LANG = ${mapLangJs};
 
       function post(payload) {
         try {
@@ -194,7 +197,10 @@ export function buildYandexMapHtml(apiKey: string, options?: BuildYandexMapHtmlO
               location: { center: [37.617644, 55.755819], zoom: 10 },
               showScaleInCopyrights: true,
             },
-            [new YMapDefaultSchemeLayer({}), new YMapDefaultFeaturesLayer({})],
+            [
+              new YMapDefaultSchemeLayer({ lang: MAP_LANG }),
+              new YMapDefaultFeaturesLayer({}),
+            ],
           );
           lastMapCenter = [37.617644, 55.755819];
           lastMapZoom = 10;
@@ -412,7 +418,10 @@ export function buildYandexMapHtml(apiKey: string, options?: BuildYandexMapHtmlO
             var vlng = lastMapCenter[0];
             var vlat = lastMapCenter[1];
             var vz = lastMapZoom;
-            post({ type: 'viewport', ok: true, lat: vlat, lng: vlng, zoom: vz });
+            var appEl = document.getElementById('app');
+            var vw = appEl && appEl.offsetWidth ? appEl.offsetWidth : (window.innerWidth || 0);
+            var vh = appEl && appEl.offsetHeight ? appEl.offsetHeight : (window.innerHeight || 0);
+            post({ type: 'viewport', ok: true, lat: vlat, lng: vlng, zoom: vz, widthPx: vw, heightPx: vh });
           } else if (msg.action === 'clearRecommendation') {
             if (markers.has('__rec__')) {
               try {

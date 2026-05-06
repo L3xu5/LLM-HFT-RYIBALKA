@@ -21,6 +21,21 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+function makeAuthRedirectUrl(): string {
+  const fromEnv = (process.env.EXPO_PUBLIC_AUTH_REDIRECT_URL ?? '').trim();
+  if (fromEnv) return fromEnv;
+  if (Platform.OS === 'web') {
+    const origin =
+      typeof window !== 'undefined' &&
+      typeof window.location?.origin === 'string' &&
+      window.location.origin.length > 0
+        ? window.location.origin
+        : '';
+    return origin ? `${origin}/` : Linking.createURL('/');
+  }
+  return Linking.createURL('/');
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,8 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async signUp(email, password, displayName) {
         const trimmedEmail = email.trim().toLowerCase();
         const display_name = (displayName ?? '').trim();
-        const redirectTo =
-          Platform.OS === 'web' ? undefined : Linking.createURL('/');
+        const redirectTo = makeAuthRedirectUrl();
         const { data, error } = await supabase.auth.signUp({
           email: trimmedEmail,
           password,

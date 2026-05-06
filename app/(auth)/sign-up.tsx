@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 
@@ -7,32 +8,72 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { useAuth } from '@/lib/auth';
-import { formatAuthError } from '@/lib/authHelpers';
+import { extractRetryAfterSeconds, formatAuthError } from '@/lib/authHelpers';
 import { type SignUpValues, signUpSchema } from '@/lib/authForms';
 import { colors, spacing } from '@/lib/theme';
+
+function showAuthAlert(title: string, message: string) {
+  if (Platform.OS === 'web') return;
+  Alert.alert(title, message);
+}
 
 export default function SignUpScreen() {
   const router = useRouter();
   const { signUp } = useAuth();
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitInfo, setSubmitInfo] = useState<string | null>(null);
+  const [cooldownUntilTs, setCooldownUntilTs] = useState<number>(0);
+  const [cooldownNow, setCooldownNow] = useState<number>(Date.now());
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    watch,
+    formState: { errors, isSubmitting, isValid },
   } = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { displayName: '', email: '', password: '' },
+    mode: 'onChange',
+    defaultValues: { displayName: '', email: '', password: '', confirmPassword: '' },
   });
+  const displayNameValue = watch('displayName');
+  const emailValue = watch('email');
+  const passwordValue = watch('password');
+  const confirmPasswordValue = watch('confirmPassword');
+  const cooldownLeftSec = Math.max(0, Math.ceil((cooldownUntilTs - cooldownNow) / 1000));
+  const inCooldown = cooldownLeftSec > 0;
+
+  useEffect(() => {
+    if (!inCooldown) return;
+    const id = setInterval(() => setCooldownNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [inCooldown]);
+
+  useEffect(() => {
+    if (submitError) setSubmitError(null);
+    if (submitInfo) setSubmitInfo(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayNameValue, emailValue, passwordValue, confirmPasswordValue]);
 
   async function onSubmit(values: SignUpValues) {
     try {
+      if (inCooldown) return;
+      setSubmitError(null);
+      setSubmitInfo('Creating account…');
       const result = await signUp(values.email.trim(), values.password, values.displayName.trim());
 
       if (result.needsEmailConfirmation) {
-        Alert.alert(
-          'Confirm your email',
-          'We sent a confirmation link to your inbox. After confirming, tap "Sign in". Also check your spam folder.',
-          [{ text: 'Go to sign in', onPress: () => router.replace('/(auth)/sign-in') }],
+        setSubmitInfo(
+          'Confirmation email sent. Check inbox/spam, then use Sign in.',
         );
+        const confirmMsg =
+          'We sent a confirmation link to your inbox. After confirming, tap "Sign in". Also check your spam folder.';
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          showAuthAlert('Confirm your email', confirmMsg);
+          router.replace('/(auth)/sign-in');
+        } else {
+          Alert.alert('Confirm your email', confirmMsg, [
+            { text: 'Go to sign in', onPress: () => router.replace('/(auth)/sign-in') },
+          ]);
+        }
         return;
       }
 
@@ -41,7 +82,19 @@ export default function SignUpScreen() {
       if (__DEV__) {
         console.warn('[signUp]', e);
       }
-      Alert.alert('Sign-up failed', formatAuthError(e));
+      const msg = formatAuthError(e);
+      const rawMsg = e instanceof Error ? e.message : String(e);
+      setSubmitError(msg);
+      setSubmitInfo(null);
+      const retryAfterSec = extractRetryAfterSeconds(rawMsg) ?? extractRetryAfterSeconds(msg);
+      if (retryAfterSec !== null) {
+        setCooldownUntilTs(Date.now() + retryAfterSec * 1000);
+        setCooldownNow(Date.now());
+      } else if (/confirmation emails were requested/i.test(msg) || /rate limit/i.test(msg)) {
+        setCooldownUntilTs(Date.now() + 120_000);
+        setCooldownNow(Date.now());
+      }
+      showAuthAlert('Sign-up failed', msg);
     }
   }
 
@@ -66,6 +119,7 @@ export default function SignUpScreen() {
                 value={field.value}
                 onChangeText={field.onChange}
                 error={errors.displayName?.message}
+                editable={!isSubmitting && !inCooldown}
               />
             )}
           />
@@ -81,6 +135,7 @@ export default function SignUpScreen() {
                 value={field.value}
                 onChangeText={field.onChange}
                 error={errors.email?.message}
+                editable={!isSubmitting && !inCooldown}
               />
             )}
           />
@@ -92,16 +147,51 @@ export default function SignUpScreen() {
                 label="Password"
                 secureTextEntry
                 autoCapitalize="none"
+                autoComplete="new-password"
                 value={field.value}
                 onChangeText={field.onChange}
                 error={errors.password?.message}
+                editable={!isSubmitting && !inCooldown}
               />
             )}
           />
+          <Controller
+            control={control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <TextField
+                label="Repeat password"
+                secureTextEntry
+                autoCapitalize="none"
+                autoComplete="new-password"
+                value={field.value}
+                onChangeText={field.onChange}
+                error={errors.confirmPassword?.message}
+                editable={!isSubmitting && !inCooldown}
+              />
+            )}
+          />
+          <Text style={styles.hint}>
+            Password: 8+ characters. If signup is rate-limited, wait and use the link in your latest email.
+          </Text>
+          {Platform.OS === 'web' ? (
+            <Text style={styles.hint}>
+              Web note: messages are shown inline below. Keep this page open until you see the final status.
+            </Text>
+          ) : null}
+
+          {submitError ? <Text style={styles.errorBanner}>{submitError}</Text> : null}
+          {submitInfo ? <Text style={styles.infoBanner}>{submitInfo}</Text> : null}
+          {inCooldown ? (
+            <Text style={styles.cooldownBanner}>
+              Too many attempts. Please wait {cooldownLeftSec}s before trying again.
+            </Text>
+          ) : null}
 
           <PrimaryButton
-            title="Create account"
+            title={inCooldown ? `Wait ${cooldownLeftSec}s` : 'Create account'}
             loading={isSubmitting}
+            disabled={!isValid || isSubmitting || inCooldown}
             onPress={handleSubmit(onSubmit)}
           />
 
@@ -123,6 +213,32 @@ const styles = StyleSheet.create({
   title: { fontSize: 32, fontWeight: '800', color: colors.text },
   subtitle: { color: colors.textMuted, fontSize: 15 },
   form: { gap: spacing.md },
+  hint: { color: colors.textMuted, fontSize: 12, marginTop: -2 },
+  errorBanner: {
+    color: colors.danger,
+    backgroundColor: colors.surface,
+    borderColor: colors.danger,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: 13,
+  },
+  infoBanner: {
+    color: colors.text,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: 13,
+  },
+  cooldownBanner: {
+    color: colors.textMuted,
+    fontSize: 12,
+    textAlign: 'center',
+  },
   footer: { flexDirection: 'row', gap: spacing.xs, justifyContent: 'center', marginTop: spacing.md },
   footerText: { color: colors.textMuted },
   link: { color: colors.link, fontWeight: '600' },

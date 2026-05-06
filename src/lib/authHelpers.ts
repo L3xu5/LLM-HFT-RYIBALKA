@@ -23,9 +23,23 @@ export function formatAuthError(err: unknown): string {
       return 'Sign-up is disabled in Supabase Auth settings.';
     }
     if (/invalid email/i.test(m)) return 'Invalid email.';
+    if (/email rate limit exceeded/i.test(m)) {
+      return 'Too many confirmation emails were requested. Please check your inbox/spam and try again later.';
+    }
+    const retrySec = extractRetryAfterSeconds(m);
+    if (retrySec !== null) {
+      return `For security reasons, please wait ${retrySec} seconds before trying again.`;
+    }
     if (/rate limit|too many requests/i.test(m)) return 'Too many attempts. Please wait a bit.';
     if (/fetch failed|network/i.test(m)) return 'No network or Supabase is unavailable. Check URL and key in .env.';
     return m;
   }
   return String(err);
+}
+
+export function extractRetryAfterSeconds(text: string): number | null {
+  const m = text.match(/after\s+(\d+)\s+seconds?/i);
+  if (!m) return null;
+  const sec = Number(m[1]);
+  return Number.isFinite(sec) && sec > 0 ? sec : null;
 }

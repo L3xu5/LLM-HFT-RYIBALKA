@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "build:web": "node scripts/export-web.cjs",
     "test": "jest",
+    "test:live:sources": "node scripts/test-live-sources.cjs",
     "test:coverage": "jest --coverage",
     "deploy:function": "bash scripts/deploy-recommend-function.sh",
     "llm:deploy": "bash scripts/deploy-recommend-function.sh",

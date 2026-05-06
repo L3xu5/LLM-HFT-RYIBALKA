@@ -140,6 +140,8 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
           lat?: number;
           lng?: number;
           zoom?: number;
+          widthPx?: number;
+          heightPx?: number;
           message?: string;
         };
         if (data.type === 'viewport') {
@@ -156,7 +158,19 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
           }
           const zm =
             typeof data.zoom === 'number' && Number.isFinite(data.zoom) ? data.zoom : 12;
-          p.resolve({ lat: data.lat, lng: data.lng, zoom: zm });
+          p.resolve({
+            lat: data.lat,
+            lng: data.lng,
+            zoom: zm,
+            widthPx:
+              typeof data.widthPx === 'number' && Number.isFinite(data.widthPx)
+                ? data.widthPx
+                : undefined,
+            heightPx:
+              typeof data.heightPx === 'number' && Number.isFinite(data.heightPx)
+                ? data.heightPx
+                : undefined,
+          });
           return;
         }
         if (data.type === 'ready') {

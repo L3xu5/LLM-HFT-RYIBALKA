@@ -32,4 +32,21 @@ export type RecommendationResponse = {
   reason: string;
   suggested_bait?: string | null;
   suggested_species?: string | null;
+  confidence?: number;
+  assumptions?: string[];
+  nearby_evidence?: string[];
+  sources?: string[];
+  diagnostics?: {
+    attempts?: Array<{
+      source: 'overpass' | 'nominatim';
+      around: 'center' | 'model';
+      radius_km: number;
+      hits?: number;
+    }>;
+    filtered_catches_in_radius?: number;
+    fallback_mode?: 'best_effort_model_or_center';
+    snapped_to_water?: boolean;
+    used_water_points?: number;
+    external_water_points?: number;
+  };
 };

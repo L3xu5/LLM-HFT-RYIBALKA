@@ -23,6 +23,7 @@ describe('signUpSchema', () => {
         displayName: 'Ivan',
         email: 'ivan@test.ru',
         password: '12345678',
+        confirmPassword: '12345678',
       }).success,
     ).toBe(true);
   });
@@ -33,6 +34,7 @@ describe('signUpSchema', () => {
         displayName: '',
         email: 'a@test.ru',
         password: '12345678',
+        confirmPassword: '12345678',
       }).success,
     ).toBe(true);
   });
@@ -43,6 +45,7 @@ describe('signUpSchema', () => {
         displayName: '   ',
         email: 'a@test.ru',
         password: '12345678',
+        confirmPassword: '12345678',
       }).success,
     ).toBe(true);
   });
@@ -53,6 +56,7 @@ describe('signUpSchema', () => {
         displayName: 'A',
         email: 'a@test.ru',
         password: '12345678',
+        confirmPassword: '12345678',
       }).success,
     ).toBe(false);
   });
@@ -63,6 +67,7 @@ describe('signUpSchema', () => {
         displayName: 'Ivan',
         email: 'a@test.ru',
         password: '1234567',
+        confirmPassword: '1234567',
       }).success,
     ).toBe(false);
   });
@@ -72,8 +77,20 @@ describe('signUpSchema', () => {
       displayName: '',
       email: ' User@Test.RU ',
       password: '12345678',
+      confirmPassword: '12345678',
     });
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.email).toBe('user@test.ru');
+  });
+
+  it('rejects mismatched confirmation password', () => {
+    expect(
+      signUpSchema.safeParse({
+        displayName: 'Ivan',
+        email: 'a@test.ru',
+        password: '12345678',
+        confirmPassword: '87654321',
+      }).success,
+    ).toBe(false);
   });
 });

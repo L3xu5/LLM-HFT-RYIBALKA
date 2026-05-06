@@ -7,8 +7,14 @@ describe('radiusKmForMapViewport', () => {
     expect(high).toBeLessThan(low);
   });
 
-  it('clamps range to 5-400 km', () => {
+  it('clamps range to 0.4-400 km', () => {
     expect(radiusKmForMapViewport(2, 60)).toBeLessThanOrEqual(400);
-    expect(radiusKmForMapViewport(19, 60)).toBeGreaterThanOrEqual(5);
+    expect(radiusKmForMapViewport(19, 60)).toBeGreaterThanOrEqual(0.4);
+  });
+
+  it('increases radius for larger visible viewport', () => {
+    const small = radiusKmForMapViewport(12, 55, 320, 320);
+    const large = radiusKmForMapViewport(12, 55, 1200, 900);
+    expect(large).toBeGreaterThan(small);
   });
 });
