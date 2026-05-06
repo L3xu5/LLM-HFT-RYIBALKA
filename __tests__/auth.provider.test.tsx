@@ -28,7 +28,7 @@ describe('AuthProvider', () => {
     mockSignUp.mockReset();
   });
 
-  it('signUp возвращает needsEmailConfirmation без сессии', async () => {
+  it('signUp returns needsEmailConfirmation when session is missing', async () => {
     mockSignUp.mockResolvedValue({
       data: { user: { id: 'user-1' }, session: null },
       error: null,
@@ -40,7 +40,7 @@ describe('AuthProvider', () => {
 
     let out: Awaited<ReturnType<(typeof result.current)['signUp']>>;
     await act(async () => {
-      out = await result.current.signUp('fish@test.ru', '12345678', 'Пётр');
+      out = await result.current.signUp('fish@test.ru', '12345678', 'Peter');
     });
 
     expect(out!.needsEmailConfirmation).toBe(true);
@@ -50,13 +50,13 @@ describe('AuthProvider', () => {
         password: '12345678',
         options: expect.objectContaining({
           emailRedirectTo: expect.any(String),
-          data: { display_name: 'Пётр' },
+          data: { display_name: 'Peter' },
         }),
       }),
     );
   });
 
-  it('signUp без подтверждения: сессия есть — флаг false', async () => {
+  it('signUp without confirmation: session exists - flag is false', async () => {
     mockSignUp.mockResolvedValue({
       data: {
         user: { id: 'user-1' },

@@ -1,7 +1,7 @@
 /**
- * Подгружает корневой `.env` в process.env и только затем вызывает `expo export`.
- * Иначе app.config.ts и Metro не видят EXPO_PUBLIC_* при сборке dist/ (белый экран на хостинге).
- * В CI переменные уже в окружении — файл .env не обязателен.
+ * Loads root `.env` into process.env and only then runs `expo export`.
+ * Otherwise app.config.ts and Metro do not see EXPO_PUBLIC_* while building dist/ (blank screen on hosting).
+ * In CI variables are already in environment, so .env is optional.
  */
 const { spawnSync } = require('child_process');
 const fs = require('fs');
@@ -14,7 +14,7 @@ if (fs.existsSync(envPath)) {
   try {
     require('dotenv').config({ path: envPath });
   } catch (e) {
-    console.warn('[export-web] dotenv не загружен:', e?.message ?? e);
+    console.warn('[export-web] dotenv not loaded:', e?.message ?? e);
   }
 }
 

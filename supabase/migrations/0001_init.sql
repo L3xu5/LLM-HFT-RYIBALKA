@@ -1,5 +1,5 @@
 -- Fishing app schema + RLS.
--- Apply with: supabase db push   (или вручную в SQL Editor)
+-- Apply with: supabase db push   (or run manually in SQL Editor)
 
 create extension if not exists "pgcrypto";
 

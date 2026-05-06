@@ -1,4 +1,4 @@
-/** TouchEvent и др. для web — см. `polyfills.web.ts`. */
+/** TouchEvent and related web shims — see `polyfills.web.ts`. */
 import './polyfills.web';
 
 export {};

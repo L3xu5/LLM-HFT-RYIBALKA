@@ -1,7 +1,7 @@
 import { catchFormSchema } from '@/lib/catchForm';
 
 describe('catchFormSchema', () => {
-  it('принимает пустые необязательные строки и булев флаг', () => {
+  it('accepts empty optional strings and boolean flag', () => {
     const r = catchFormSchema.safeParse({
       fish_species: '',
       weight_g: '',
@@ -13,7 +13,7 @@ describe('catchFormSchema', () => {
     expect(r.success).toBe(true);
   });
 
-  it('отклоняет слишком длинные поля', () => {
+  it('rejects overly long fields', () => {
     const r = catchFormSchema.safeParse({
       fish_species: 'x'.repeat(81),
       weight_g: '',

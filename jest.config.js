@@ -1,6 +1,6 @@
 /** @type {import('jest').Config} */
 module.exports = {
-  // jest-expo ломается на RN 0.76+ (NativeModules mock); пресет из react-native стабильнее для unit-тестов
+  // jest-expo breaks on RN 0.76+ (NativeModules mock); react-native preset is more stable for unit tests
   preset: 'react-native',
   testMatch: ['**/__tests__/**/*.test.[jt]s?(x)'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],

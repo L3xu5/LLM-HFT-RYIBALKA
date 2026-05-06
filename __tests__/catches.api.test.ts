@@ -9,7 +9,7 @@ jest.mock('@/lib/supabase', () => ({
         return {
           select: jest.fn(() => ({
             in: jest.fn().mockResolvedValue({
-              data: [{ id: 'u1', display_name: 'Иван' }],
+              data: [{ id: 'u1', display_name: 'Ivan' }],
               error: null,
             }),
           })),
@@ -35,7 +35,7 @@ describe('fetchCatches', () => {
           user_id: 'u1',
           lat: 1,
           lng: 2,
-          fish_species: 'щука',
+          fish_species: 'pike',
           weight_g: 1000,
           bait: null,
           gear: null,
@@ -50,10 +50,10 @@ describe('fetchCatches', () => {
     });
   });
 
-  it('запрашивает catches с catch_photos', async () => {
+  it('requests catches with catch_photos', async () => {
     const list = await fetchCatches();
     expect(list).toHaveLength(1);
-    expect(list[0].fish_species).toBe('щука');
+    expect(list[0].fish_species).toBe('pike');
     expect(mockLimit).toHaveBeenCalledWith(800);
   });
 });

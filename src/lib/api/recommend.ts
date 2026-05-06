@@ -27,10 +27,10 @@ async function messageFromInvokeError(error: unknown): Promise<string> {
     return `Edge Function: HTTP ${res.status}`;
   }
   if (error instanceof FunctionsRelayError) {
-    return 'Не удалось достучаться до Edge Function (relay Supabase). Проверьте регион проекта и интернет.';
+    return 'Could not reach the Edge Function (Supabase relay). Check project region and internet connection.';
   }
   if (error instanceof FunctionsFetchError) {
-    return 'Сеть: функция recommend-spot недоступна. Убедитесь, что выполнен deploy и секреты YandexGPT заданы (README).';
+    return 'Network error: recommend-spot is unavailable. Ensure it is deployed and YandexGPT secrets are set (README).';
   }
   return error instanceof Error ? error.message : String(error);
 }
@@ -40,10 +40,10 @@ export async function requestRecommendation(body: {
   lng: number;
   radiusKm?: number;
 }): Promise<RecommendationResponse> {
-  /** Обновляет сессию на сервере Auth и даёт свежий JWT для Edge (важно на iOS/Android после фона). */
+  /** Refreshes Auth server session and gets a fresh JWT for Edge (important on iOS/Android after backgrounding). */
   const { data: userData, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userData.user) {
-    throw new Error('Войдите в аккаунт, чтобы получить подсказку от AI.');
+    throw new Error('Sign in to get an AI recommendation.');
   }
 
   const {
@@ -51,7 +51,7 @@ export async function requestRecommendation(body: {
     error: sessionErr,
   } = await supabase.auth.getSession();
   if (sessionErr || !session?.access_token) {
-    throw new Error('Сессия недоступна. Выйдите и войдите снова.');
+    throw new Error('Session is unavailable. Sign out and sign in again.');
   }
 
   const { data, error } = await supabase.functions.invoke('recommend-spot', {

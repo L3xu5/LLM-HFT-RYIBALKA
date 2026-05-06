@@ -15,7 +15,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { colors, spacing } from '@/lib/theme';
 
 const schema = z.object({
-  displayName: z.string().min(2, 'Минимум 2 символа').max(40),
+  displayName: z.string().min(2, 'At least 2 characters').max(40),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -58,34 +58,34 @@ export default function ProfileScreen() {
 
   const saveMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      if (!userId) throw new Error('Нет пользователя');
+      if (!userId) throw new Error('No user');
       await updateDisplayName(userId, values.displayName.trim());
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: queryKeys.catches });
       if (userId) await qc.invalidateQueries({ queryKey: queryKeys.profile(userId) });
-      Alert.alert('Сохранено');
+      Alert.alert('Saved');
       reset({}, { keepValues: true });
     },
-    onError: (e) => Alert.alert('Ошибка', e instanceof Error ? e.message : String(e)),
+    onError: (e) => Alert.alert('Error', e instanceof Error ? e.message : String(e)),
   });
 
   async function onSignOut() {
     try {
       await signOut();
     } catch (e) {
-      Alert.alert('Ошибка', e instanceof Error ? e.message : String(e));
+      Alert.alert('Error', e instanceof Error ? e.message : String(e));
     }
   }
 
   return (
     <Screen edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.title}>Профиль</Text>
+        <Text style={styles.title}>Profile</Text>
         <Text style={styles.meta}>{session?.user.email}</Text>
 
         <View style={styles.stat}>
-          <Text style={styles.statLabel}>Мои отметки</Text>
+          <Text style={styles.statLabel}>My spots</Text>
           <Text style={styles.statValue}>{myCount}</Text>
         </View>
 
@@ -94,7 +94,7 @@ export default function ProfileScreen() {
           name="displayName"
           render={({ field }) => (
             <TextField
-              label="Отображаемое имя"
+              label="Display name"
               value={field.value}
               onChangeText={field.onChange}
               error={errors.displayName?.message}
@@ -103,17 +103,17 @@ export default function ProfileScreen() {
         />
 
         <PrimaryButton
-          title="Сохранить имя"
+          title="Save name"
           loading={isSubmitting || saveMutation.isPending}
           disabled={!isDirty}
           onPress={handleSubmit((v) => saveMutation.mutateAsync(v))}
         />
 
         <Text style={styles.hint}>
-          Видимость каждой точки настраивается при создании/редактировании улова (переключатель «Публичная»).
+          Spot visibility is configured when creating/editing a catch (the "Public" toggle).
         </Text>
 
-        <PrimaryButton variant="ghost" title="Выйти" onPress={onSignOut} />
+        <PrimaryButton variant="ghost" title="Sign out" onPress={onSignOut} />
       </ScrollView>
     </Screen>
   );

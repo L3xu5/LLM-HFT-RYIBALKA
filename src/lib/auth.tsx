@@ -7,7 +7,7 @@ import { signUpNeedsEmailConfirmation } from './authHelpers';
 import { supabase } from '@/lib/supabase';
 
 export type SignUpResult = {
-  /** Нет сессии, нужно подтвердить email (или проверьте спам). */
+  /** No session means email confirmation is still required (check spam folder too). */
   needsEmailConfirmation: boolean;
 };
 

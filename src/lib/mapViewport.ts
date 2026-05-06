@@ -1,6 +1,6 @@
 /**
- * Грубая оценка радиуса видимой области карты (км) по уровню zoom и широте.
- * Использует ~половину ширины экрана в пикселях как типичный горизонт карты.
+ * Rough estimate of visible map radius (km) based on zoom level and latitude.
+ * Uses about half of screen width in pixels as a typical map horizon.
  */
 export function radiusKmForMapViewport(zoom: number, latDeg: number): number {
   const z = Math.min(19, Math.max(2, zoom));

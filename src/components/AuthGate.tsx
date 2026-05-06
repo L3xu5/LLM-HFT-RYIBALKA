@@ -23,14 +23,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Есть сессия: уводим с (auth). Пустой segments — часто сразу после signIn, пока дерево не обновилось.
+    // Session exists: redirect away from (auth). Empty segments often happen right after signIn before tree refresh.
     if (inAuthGroup || seg.length === 0) {
       router.replace('/(tabs)/map');
     }
   }, [session, loading, segments, router]);
 
-  // Только сессия Supabase — не ждём navState для UI: иначе Stack не монтируется,
-  // useRootNavigationState() так и остаётся без key → вечный спиннер.
+  // Gate only on Supabase session and do not wait for navState in UI;
+  // otherwise Stack can fail to mount and useRootNavigationState() stays keyless -> infinite spinner.
   if (loading) {
     return (
       <View style={styles.center}>

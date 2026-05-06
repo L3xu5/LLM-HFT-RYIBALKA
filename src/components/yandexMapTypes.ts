@@ -8,7 +8,7 @@ export type MapMarkerVm = {
   color: string;
 };
 
-/** Центр видимой области карты и текущий zoom (из YMapListener). */
+/** Visible map area center and current zoom (from YMapListener). */
 export type MapViewport = {
   lat: number;
   lng: number;
@@ -17,8 +17,8 @@ export type MapViewport = {
 
 export type YandexMapHandle = {
   setCamera: (lat: number, lng: number, zoom?: number) => void;
-  /** Изменить масштаб на шаг (например +1 / −1). */
+  /** Adjust zoom by one step (for example +1 / -1). */
   adjustZoom: (delta: number) => void;
-  /** Текущий центр экрана и масштаб (область, на которую смотрит пользователь). */
+  /** Current screen center and zoom (the area currently viewed by the user). */
   getViewport: () => Promise<MapViewport>;
 };

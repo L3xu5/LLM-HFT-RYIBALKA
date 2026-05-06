@@ -1,4 +1,4 @@
-# Линт, типы и тесты на каждый PR и push в main/master.
+# Lint, typecheck, and tests for every PR and push to main/master.
 name: CI
 
 on:

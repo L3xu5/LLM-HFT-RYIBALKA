@@ -44,9 +44,9 @@ describe('requestRecommendation', () => {
     } as Awaited<ReturnType<typeof supabase.auth.getSession>>);
   });
 
-  it('вызывает recommend-spot и возвращает данные', async () => {
+  it('calls recommend-spot and returns payload', async () => {
     mockInvoke.mockResolvedValue({
-      data: { lat: 56, lng: 38, reason: 'тест', suggested_bait: 'червь' },
+      data: { lat: 56, lng: 38, reason: 'test', suggested_bait: 'worm' },
       error: null,
     });
 
@@ -57,34 +57,34 @@ describe('requestRecommendation', () => {
       timeout: 120_000,
       headers: { Authorization: 'Bearer jwt-test' },
     });
-    expect(r.reason).toBe('тест');
-    expect(r.suggested_bait).toBe('червь');
+    expect(r.reason).toBe('test');
+    expect(r.suggested_bait).toBe('worm');
   });
 
-  it('бросает если пользователь не авторизован', async () => {
+  it('throws if user is not authenticated', async () => {
     mockGetUser.mockResolvedValueOnce({
       data: { user: null },
       error: null,
     } as unknown as Awaited<ReturnType<typeof supabase.auth.getUser>>);
 
-    await expect(requestRecommendation({ lat: 1, lng: 2 })).rejects.toThrow(/Войдите в аккаунт/);
+    await expect(requestRecommendation({ lat: 1, lng: 2 })).rejects.toThrow(/Sign in/);
   });
 
-  it('бросает если нет access_token сессии', async () => {
+  it('throws if session has no access_token', async () => {
     mockGetSession.mockResolvedValueOnce({
       data: { session: null },
       error: null,
     } as Awaited<ReturnType<typeof supabase.auth.getSession>>);
 
-    await expect(requestRecommendation({ lat: 1, lng: 2 })).rejects.toThrow(/Сессия недоступна/);
+    await expect(requestRecommendation({ lat: 1, lng: 2 })).rejects.toThrow(/Session is unavailable/);
   });
 
-  it('бросает если в теле ответа error', async () => {
+  it('throws if response body includes error', async () => {
     mockInvoke.mockResolvedValue({
-      data: { error: 'нет секретов' },
+      data: { error: 'missing secrets' },
       error: null,
     });
 
-    await expect(requestRecommendation({ lat: 1, lng: 2 })).rejects.toThrow('нет секретов');
+    await expect(requestRecommendation({ lat: 1, lng: 2 })).rejects.toThrow('missing secrets');
   });
 });

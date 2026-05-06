@@ -6,11 +6,11 @@
  * - Web → RN: window.ReactNativeWebView.postMessage(JSON.stringify({ type, ... }))
  * - RN → Web: injectJavaScript calling window.__rnBridge(payloadObject)
  *
- * Важно: глобальный `ymaps3` появляется только после выполнения внешнего скрипта API.
- * Expo Web: скрипт api-maps в **родительском** окне (`useParentWindowApi: true`); iframe (`srcDoc`, не blob:) использует `parent.ymaps3`.
- * Инициализация карты после появления размера у `#app` (`scheduleBoot`), иначе тайлы с NaN.
+ * Important: global `ymaps3` exists only after the external API script executes.
+ * Expo Web: api-maps script is in the **parent** window (`useParentWindowApi: true`); iframe (`srcDoc`, not blob:) uses `parent.ymaps3`.
+ * Map initializes only after `#app` gets size (`scheduleBoot`), otherwise tiles get NaN.
  */
-/** Версия пакета маркеров для registerCdn + jsdelivr (см. npm @yandex/ymaps3-default-ui-theme). */
+/** Marker package version for registerCdn + jsdelivr (see npm @yandex/ymaps3-default-ui-theme). */
 export const YMAPS_DEFAULT_UI_THEME_VERSION = '0.0.24';
 
 export function getYandexMapsApiScriptUrl(apiKey: string): string {
@@ -19,8 +19,8 @@ export function getYandexMapsApiScriptUrl(apiKey: string): string {
 
 export type BuildYandexMapHtmlOptions = {
   /**
-   * true: не вставлять &lt;script src=api-maps&gt; внутри iframe — ждать `ymaps3` от `window.parent`
-   * (его подгружает React на странице Expo Web).
+   * true: do not insert &lt;script src=api-maps&gt; inside iframe - wait for `ymaps3` from `window.parent`
+   * (it is loaded by React on the Expo Web page).
    */
   useParentWindowApi?: boolean;
 };
@@ -94,8 +94,8 @@ export function buildYandexMapHtml(apiKey: string, options?: BuildYandexMapHtmlO
 
       var map = null;
       /**
-       * Текущий центр экрана и зум — держим в синхроне с картой через YMapListener.onUpdate.
-       * У YMap нет стабильного map.location; без onUpdate после drag зум ± шёл к старому центру (дефолт/GPS).
+       * Current screen center and zoom - keep synced with map via YMapListener.onUpdate.
+       * YMap has no stable map.location; without onUpdate zoom +/- drifted to stale center (default/GPS).
        */
       var lastMapCenter = [37.617644, 55.755819];
       var lastMapZoom = 10;
@@ -104,13 +104,13 @@ export function buildYandexMapHtml(apiKey: string, options?: BuildYandexMapHtmlO
       var pickMode = false;
       var clickListener = null;
 
-      /** Размер области карты с родительской страницы Expo (onLayout + postMessage) — приоритет над innerWidth iframe. */
+      /** Map viewport size from parent Expo page (onLayout + postMessage) - preferred over iframe innerWidth. */
       var RN_VIEWPORT_W = 0;
       var RN_VIEWPORT_H = 0;
 
       /**
-       * В iframe с blob цепочка height:100% часто даёт 0×0 → тайлы x/y NaN.
-       * Не подменяем размер всем окном родителя — это ломает проекцию; ждём rnMapViewport или берём inner iframe.
+       * In blob iframe, height:100% chain often yields 0x0 -> tile x/y NaN.
+       * Do not force full parent window size - it breaks projection; wait for rnMapViewport or use iframe inner size.
        */
       function ensureMapContainerPixels() {
         var el = document.getElementById('app');
@@ -170,12 +170,12 @@ export function buildYandexMapHtml(apiKey: string, options?: BuildYandexMapHtmlO
 
           var api = getApi();
           if (!api) {
-            throw new Error('API карты не загрузился (нет ymaps3). Проверьте ключ и сеть.');
+            throw new Error('Map API did not load (ymaps3 missing). Check key and network.');
           }
 
           await api.ready;
 
-          // Без registerCdn ymaps3.import не знает, откуда тянуть npm-пакет темы (ошибка «no loader»).
+          // Without registerCdn ymaps3.import does not know where to load the theme npm package ("no loader").
           if (api.import && typeof api.import.registerCdn === 'function') {
             api.import.registerCdn('https://cdn.jsdelivr.net/npm/{package}', [${themePkgLine}]);
           }
@@ -231,7 +231,7 @@ export function buildYandexMapHtml(apiKey: string, options?: BuildYandexMapHtmlO
           });
           map.addChild(clickListener);
 
-          /** После появления размера контейнера пересчитываем вьюпорт (иначе тайлы NaN до первого resize). */
+          /** Recalculate viewport after container gets size (otherwise tiles stay NaN until first resize). */
           function nudgeResize() {
             try {
               window.dispatchEvent(new Event('resize'));
@@ -244,12 +244,12 @@ export function buildYandexMapHtml(apiKey: string, options?: BuildYandexMapHtmlO
           post({ type: 'ready' });
         } catch (e) {
           document.getElementById('app').innerHTML =
-            '<div class="map-error">Не удалось загрузить карту: ' + String(e && e.message ? e.message : e) + '</div>';
+            '<div class="map-error">Failed to load map: ' + String(e && e.message ? e.message : e) + '</div>';
           post({ type: 'error', message: String(e && e.message ? e.message : e) });
         }
       }
 
-      /** Пока #app с нулевой высотой (iframe / RN Web), тайлы дают x/y NaN → 400 и ложный CORS. */
+      /** While #app height is zero (iframe / RN Web), tiles produce x/y NaN -> 400 and false CORS errors. */
       function scheduleBoot() {
         var el = document.getElementById('app');
         if (!el) {
@@ -279,7 +279,7 @@ export function buildYandexMapHtml(apiKey: string, options?: BuildYandexMapHtmlO
           return RN_VIEWPORT_W >= 2 && RN_VIEWPORT_H >= 2;
         }
 
-        /** Дождаться postMessage rnMapViewport от Expo (несколько кадров), иначе YMap строится с неверным viewport. */
+        /** Wait for rnMapViewport postMessage from Expo (a few frames), otherwise YMap starts with wrong viewport. */
         function canStartMap(attempts) {
           if (!sized()) return false;
           if (hasParentViewport()) return true;
@@ -289,7 +289,7 @@ export function buildYandexMapHtml(apiKey: string, options?: BuildYandexMapHtmlO
         var ro = null;
         if (typeof ResizeObserver !== 'undefined') {
           ro = new ResizeObserver(function () {
-            /* attempts недоступен — только проверка размера; полный canStartMap в tick */
+            /* attempts is not available here: only size check; full canStartMap check is in tick */
             if (sized() && hasParentViewport()) runInit();
           });
           try {
@@ -444,7 +444,7 @@ export function buildYandexMapHtml(apiKey: string, options?: BuildYandexMapHtmlO
               var appEl = document.getElementById('app');
               if (appEl) {
                 appEl.innerHTML =
-                  '<div class="map-error">Не дождались API карты от родительской страницы. Обновите страницу.</div>';
+                  '<div class="map-error">Timed out waiting for map API from parent page. Refresh the page.</div>';
               }
               post({ type: 'error', message: 'parent ymaps3 timeout' });
             }
@@ -464,7 +464,7 @@ export function buildYandexMapHtml(apiKey: string, options?: BuildYandexMapHtmlO
           var app = document.getElementById('app');
           if (app) {
             app.innerHTML =
-              '<div class="map-error">Не удалось загрузить скрипт Яндекс.Карт. В кабинете ключа: для JS API — HTTP Referer <b>localhost</b> и при необходимости <b>127.0.0.1</b>; для приложения в WebView — ограничение по <b>идентификатору iOS-пакета</b> (bundle id), например <b>com.rybalka.app</b>. Ограничение по IP для разработки оставьте пустым.</div>';
+              '<div class="map-error">Failed to load Yandex Maps script. In key settings: for JS API set HTTP Referer <b>localhost</b> and optionally <b>127.0.0.1</b>; for WebView app set restriction by <b>iOS bundle identifier</b> (bundle id), for example <b>com.rybalka.app</b>. Keep IP restriction empty for development.</div>';
           }
           post({ type: 'error', message: 'script load failed' });
         };

@@ -9,8 +9,8 @@ type Extra = {
 const extra = (Constants.expoConfig?.extra ?? {}) as Extra;
 
 /**
- * Прямые обращения к process.env — Metro заменяет их литералами при `expo export`.
- * Не сокращать через объект вида `process.env[name]` — подстановка может не сработать.
+ * Direct `process.env` access is required because Metro inlines literals during `expo export`.
+ * Do not rewrite this into `process.env[name]` access, or replacement may fail.
  */
 const fromBundler = {
   supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
@@ -18,7 +18,7 @@ const fromBundler = {
   yandexMapsApiKey: process.env.EXPO_PUBLIC_YANDEX_MAPS_JS_API_KEY,
 };
 
-/** Сначала extra из app.config (после загрузки .env при сборке), затем литералы из бандлера. */
+/** Prefer `extra` from app.config first (after .env load), then bundler literals. */
 function pick(first: string | undefined, second: string | undefined): string | undefined {
   const a = first?.trim();
   if (a) return a;
@@ -30,7 +30,7 @@ function pick(first: string | undefined, second: string | undefined): string | u
 function required(name: string, value: string | undefined): string {
   if (!value || value.length === 0) {
     throw new Error(
-      `Missing env "${name}". Локально: .env (см. .env.example) и перезапуск. Веб/деплой: задайте EXPO_PUBLIC_* при сборке (export) или GitHub Secrets для CI.`,
+      `Missing env "${name}". Local: configure .env (see .env.example) and restart. Web/deploy: pass EXPO_PUBLIC_* at build/export time or use GitHub Secrets in CI.`,
     );
   }
   return value;

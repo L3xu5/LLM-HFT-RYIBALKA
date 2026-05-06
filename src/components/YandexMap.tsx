@@ -76,7 +76,7 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
       getViewport() {
         return new Promise<MapViewport>((resolve, reject) => {
           const prev = viewportPendingRef.current;
-          if (prev) prev.reject(new Error('Запрос вида карты прерван'));
+          if (prev) prev.reject(new Error('Map viewport request was interrupted'));
           viewportPendingRef.current = { resolve, reject };
           if (viewportTimerRef.current) clearTimeout(viewportTimerRef.current);
           viewportTimerRef.current = setTimeout(() => {
@@ -84,7 +84,7 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
             const p = viewportPendingRef.current;
             if (p) {
               viewportPendingRef.current = null;
-              p.reject(new Error('Карта не ответила'));
+              p.reject(new Error('Map did not respond'));
             }
           }, 4000);
           inject({ action: 'getViewport' });
@@ -115,7 +115,7 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
           viewportPendingRef.current = null;
           if (!p) return;
           if (data.ok === false || typeof data.lat !== 'number' || typeof data.lng !== 'number') {
-            p.reject(new Error('Карта ещё не готова'));
+            p.reject(new Error('Map is not ready yet'));
             return;
           }
           const zm =
@@ -129,7 +129,7 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
             readyCallbackFiredRef.current = true;
             onReady?.();
           }
-          /** Повторный ready после перезагрузки документа в WebView: webReady уже true → effect с маркерами не отработает. */
+          /** Repeated ready after WebView document reload: webReady is already true, so markers effect will not rerun. */
           pushMarkers();
           inject({ action: 'setPickMode', enabled: pickMode });
           return;
@@ -152,7 +152,7 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
     [inject, onBridgeError, onMapPress, onMarkerPress, onReady, pickMode, pushMarkers],
   );
 
-  /** Без baseUrl WKWebView даёт «about:blank» → Яндекс режет скрипт по Referrer; совпадает с localhost в кабинете ключа. */
+  /** Without baseUrl WKWebView uses "about:blank"; Yandex blocks script by Referrer. localhost matches key settings. */
   const webSource = useMemo(() => ({ html, baseUrl: 'http://localhost:8081/' }), [html]);
 
   return (

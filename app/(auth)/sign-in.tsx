@@ -29,7 +29,7 @@ export default function SignInScreen() {
       if (__DEV__) {
         console.warn('[signIn]', e);
       }
-      Alert.alert('Не удалось войти', formatAuthError(e));
+      Alert.alert('Sign-in failed', formatAuthError(e));
     }
   }
 
@@ -39,8 +39,8 @@ export default function SignInScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Рыбалка</Text>
-          <Text style={styles.subtitle}>Войдите, чтобы открыть карту</Text>
+          <Text style={styles.title}>Rybalka</Text>
+          <Text style={styles.subtitle}>Sign in to open the map</Text>
         </View>
 
         <View style={styles.form}>
@@ -64,7 +64,7 @@ export default function SignInScreen() {
             name="password"
             render={({ field }) => (
               <TextField
-                label="Пароль"
+                label="Password"
                 secureTextEntry
                 autoCapitalize="none"
                 value={field.value}
@@ -74,12 +74,12 @@ export default function SignInScreen() {
             )}
           />
 
-          <PrimaryButton title="Войти" loading={isSubmitting} onPress={handleSubmit(onSubmit)} />
+          <PrimaryButton title="Sign in" loading={isSubmitting} onPress={handleSubmit(onSubmit)} />
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Нет аккаунта?</Text>
+            <Text style={styles.footerText}>No account yet?</Text>
             <Link href="/(auth)/sign-up" style={styles.link}>
-              Зарегистрироваться
+              Create one
             </Link>
           </View>
         </View>

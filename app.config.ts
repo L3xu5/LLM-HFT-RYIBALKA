@@ -2,7 +2,7 @@ import type { ExpoConfig } from 'expo/config';
 
 const config: ExpoConfig = {
   owner: 'lexasovsky',
-  name: 'Рыбалка',
+  name: 'Fishing',
   slug: 'rybalka',
   scheme: 'rybalka',
   version: '1.0.0',
@@ -13,12 +13,12 @@ const config: ExpoConfig = {
     supportsTablet: false,
     bundleIdentifier: 'com.rybalka.app',
     infoPlist: {
-      /** Только стандартное HTTPS/TLS — упрощает ответ в App Store Connect (encryption export). */
+      /** Standard HTTPS/TLS only - simplifies App Store Connect encryption export answers. */
       ITSAppUsesNonExemptEncryption: false,
       NSLocationWhenInUseUsageDescription:
-        'Нужно для показа вашего положения на карте и подбора ближайших мест рыбалки.',
-      NSCameraUsageDescription: 'Нужно, чтобы сфотографировать улов.',
-      NSPhotoLibraryUsageDescription: 'Нужно, чтобы прикрепить фото улова из галереи.',
+        'Needed to show your location on the map and suggest nearby fishing spots.',
+      NSCameraUsageDescription: 'Needed to take a photo of your catch.',
+      NSPhotoLibraryUsageDescription: 'Needed to attach a catch photo from your gallery.',
     },
   },
   android: {
@@ -43,14 +43,14 @@ const config: ExpoConfig = {
       'expo-location',
       {
         locationAlwaysAndWhenInUsePermission:
-          'Нужно для показа вашего положения и подбора ближайших мест рыбалки.',
+          'Needed to show your location and suggest nearby fishing spots.',
       },
     ],
     [
       'expo-image-picker',
       {
-        photosPermission: 'Нужно, чтобы прикрепить фото улова.',
-        cameraPermission: 'Нужно, чтобы сфотографировать улов.',
+        photosPermission: 'Needed to attach a catch photo.',
+        cameraPermission: 'Needed to take a catch photo.',
       },
     ],
   ],

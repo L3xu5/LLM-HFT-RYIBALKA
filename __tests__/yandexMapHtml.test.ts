@@ -1,7 +1,7 @@
 import { buildYandexMapHtml } from '@/map/yandexMapHtml';
 
 describe('buildYandexMapHtml', () => {
-  it('подставляет apikey в URL скрипта Яндекса', () => {
+  it('injects apikey into Yandex script URL', () => {
     const html = buildYandexMapHtml('test-api-key-123');
     expect(html).toContain('api-maps.yandex.ru/v3/');
     expect(html).toContain('apikey=test-api-key-123');

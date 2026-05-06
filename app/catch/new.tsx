@@ -41,7 +41,7 @@ export default function NewCatchScreen() {
   async function pickPhotos() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Доступ к фото', 'Разрешите доступ к галерее в настройках.');
+      Alert.alert('Photo access', 'Allow gallery access in settings.');
       return;
     }
 
@@ -62,12 +62,12 @@ export default function NewCatchScreen() {
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      if (!coordsOk) throw new Error('Нет координат');
+      if (!coordsOk) throw new Error('Missing coordinates');
 
       const weightRaw = values.weight_g?.trim();
       const weight = weightRaw ? Number(weightRaw) : undefined;
       if (weight !== undefined && (!Number.isFinite(weight) || weight < 0)) {
-        throw new Error('Некорректный вес');
+        throw new Error('Invalid weight');
       }
 
       const row = await createCatch({
@@ -89,16 +89,16 @@ export default function NewCatchScreen() {
       await qc.invalidateQueries({ queryKey: queryKeys.catches });
       router.replace('/(tabs)/map');
     },
-    onError: (e) => Alert.alert('Ошибка', e instanceof Error ? e.message : String(e)),
+    onError: (e) => Alert.alert('Error', e instanceof Error ? e.message : String(e)),
   });
 
   if (!coordsOk) {
     return (
       <Screen>
         <Text style={styles.help}>
-          Чтобы добавить улов, откройте вкладку «Карта», нажмите «＋» и выберите точку на водоёме.
+          To add a catch, open the "Map" tab, tap "+" and choose a point on the water.
         </Text>
-        <PrimaryButton title="Перейти к карте" onPress={() => router.replace('/(tabs)/map')} />
+        <PrimaryButton title="Go to map" onPress={() => router.replace('/(tabs)/map')} />
       </Screen>
     );
   }
@@ -110,7 +110,7 @@ export default function NewCatchScreen() {
           <Text style={styles.coords}>
             {lat.toFixed(5)}, {lng.toFixed(5)}
           </Text>
-          <Text style={styles.coordsHint}>Координаты выбраны на карте</Text>
+          <Text style={styles.coordsHint}>Coordinates were selected on the map</Text>
         </View>
 
         <View style={styles.form}>
@@ -118,7 +118,7 @@ export default function NewCatchScreen() {
             control={control}
             name="fish_species"
             render={({ field }) => (
-              <TextField label="Что поймали (вид)" value={field.value} onChangeText={field.onChange} />
+              <TextField label="Species caught" value={field.value} onChangeText={field.onChange} />
             )}
           />
 
@@ -127,7 +127,7 @@ export default function NewCatchScreen() {
             name="weight_g"
             render={({ field }) => (
               <TextField
-                label="Вес (граммы)"
+                label="Weight (grams)"
                 keyboardType="number-pad"
                 value={field.value}
                 onChangeText={field.onChange}
@@ -139,7 +139,7 @@ export default function NewCatchScreen() {
             control={control}
             name="bait"
             render={({ field }) => (
-              <TextField label="Наживка / прикорм" value={field.value} onChangeText={field.onChange} />
+              <TextField label="Bait / groundbait" value={field.value} onChangeText={field.onChange} />
             )}
           />
 
@@ -147,7 +147,7 @@ export default function NewCatchScreen() {
             control={control}
             name="gear"
             render={({ field }) => (
-              <TextField label="Снасть" value={field.value} onChangeText={field.onChange} />
+              <TextField label="Gear" value={field.value} onChangeText={field.onChange} />
             )}
           />
 
@@ -156,7 +156,7 @@ export default function NewCatchScreen() {
             name="notes"
             render={({ field }) => (
               <TextField
-                label="Заметки"
+                label="Notes"
                 multiline
                 style={{ minHeight: 96, textAlignVertical: 'top' }}
                 value={field.value}
@@ -170,7 +170,7 @@ export default function NewCatchScreen() {
             name="is_public"
             render={({ field }) => (
               <View style={styles.switchRow}>
-                <Text style={styles.switchLabel}>Публичная точка</Text>
+                <Text style={styles.switchLabel}>Public point</Text>
                 <Switch
                   value={field.value}
                   onValueChange={field.onChange}
@@ -181,19 +181,19 @@ export default function NewCatchScreen() {
             )}
           />
 
-          <PrimaryButton variant="ghost" title="Добавить фото" onPress={pickPhotos} />
+          <PrimaryButton variant="ghost" title="Add photo" onPress={pickPhotos} />
 
           <View style={styles.photoGrid}>
             {photos.map((uri) => (
               <Pressable key={uri} onPress={() => removePhoto(uri)} style={styles.photoWrap}>
                 <Image source={{ uri }} style={styles.photo} />
-                <Text style={styles.photoHint}>Нажмите, чтобы убрать</Text>
+                <Text style={styles.photoHint}>Tap to remove</Text>
               </Pressable>
             ))}
           </View>
 
           <PrimaryButton
-            title="Сохранить улов"
+            title="Save catch"
             loading={mutation.isPending}
             onPress={handleSubmit((v) => mutation.mutateAsync(v))}
           />

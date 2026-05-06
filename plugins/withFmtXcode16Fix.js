@@ -1,7 +1,7 @@
 /**
- * Xcode 16+ / Apple Clang: fmt 11 + FMT_STRING падает на consteval.
- * `-DFMT_USE_CONSTEVAL=0` не действует: base.h переопределяет макрос позже.
- * Патчим `Pods/fmt/include/fmt/base.h` в post_install (после `pod install`).
+ * Xcode 16+ / Apple Clang: fmt 11 + FMT_STRING fails on consteval.
+ * `-DFMT_USE_CONSTEVAL=0` does not help: base.h redefines the macro later.
+ * Patch `Pods/fmt/include/fmt/base.h` in post_install (after `pod install`).
  *
  * @param {import('@expo/config-plugins').ExportedConfig} config
  */
@@ -51,7 +51,7 @@ function withFmtXcode16Fix(config) {
     }
 
     throw new Error(
-      '[withFmtXcode16Fix] Не удалось изменить Podfile: не найден ожидаемый блок resource_bundle или post_install.',
+      '[withFmtXcode16Fix] Failed to patch Podfile: expected resource_bundle or post_install block was not found.',
     );
   });
 }

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-/** Форма нового / редактирования улова (общая схема полей). */
+/** New/edit catch form (shared field schema). */
 export const catchFormSchema = z.object({
   fish_species: z.string().max(80).optional().or(z.literal('')),
   weight_g: z.string().optional().or(z.literal('')),

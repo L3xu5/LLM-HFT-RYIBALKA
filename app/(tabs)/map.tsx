@@ -18,7 +18,7 @@ export default function MapScreen() {
   const { session } = useAuth();
   const router = useRouter();
   const mapRef = useRef<YandexMapHandle>(null);
-  /** Одно начальное центрирование по GPS на экран; повторные `ready`/ресайз не трогают камеру (в т.ч. после зума). */
+  /** One initial GPS centering per screen; repeated `ready`/resize must not move camera (including after zoom). */
   const initialGpsCenterDoneRef = useRef(false);
 
   const [pickMode, setPickMode] = useState(false);
@@ -37,8 +37,8 @@ export default function MapScreen() {
       id: c.id,
       lat: c.lat,
       lng: c.lng,
-      title: c.fish_species?.trim() ? (c.fish_species as string) : 'Улов',
-      subtitle: c.user_id === uid ? 'Мой улов' : (c.author_name ?? 'Рыбак'),
+      title: c.fish_species?.trim() ? (c.fish_species as string) : 'Catch',
+      subtitle: c.user_id === uid ? 'My catch' : (c.author_name ?? 'Angler'),
       color: c.user_id === uid ? 'green' : 'blue',
     }));
     if (rec) {
@@ -46,8 +46,8 @@ export default function MapScreen() {
         id: '__rec__',
         lat: rec.lat,
         lng: rec.lng,
-        title: 'Куда поехать?',
-        subtitle: rec.suggested_bait ? `Наживка: ${rec.suggested_bait}` : undefined,
+        title: 'Where to go?',
+        subtitle: rec.suggested_bait ? `Bait: ${rec.suggested_bait}` : undefined,
         color: 'orange',
       });
     }
@@ -66,7 +66,7 @@ export default function MapScreen() {
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
       mapRef.current?.setCamera(lat, lng, 11);
     } catch {
-      /* геолокация недоступна — остаёмся на дефолтном центре карты */
+      /* geolocation unavailable — keep default map center */
     }
   }, []);
 
@@ -98,8 +98,8 @@ export default function MapScreen() {
         const perm = await Location.requestForegroundPermissionsAsync();
         if (!perm.granted) {
           Alert.alert(
-            'Центр карты',
-            'Сначала дождитесь загрузки карты или разрешите геолокацию — тогда подберём точку рядом с вами.',
+            'Map center',
+            'Wait for map load or allow geolocation first, then we can suggest a nearby spot.',
           );
           return;
         }
@@ -118,7 +118,7 @@ export default function MapScreen() {
       setRec(result);
       setRecOpen(true);
     } catch (e) {
-      Alert.alert('Ошибка', e instanceof Error ? e.message : String(e));
+      Alert.alert('Error', e instanceof Error ? e.message : String(e));
     } finally {
       setLoadingRec(false);
     }
@@ -151,9 +151,9 @@ export default function MapScreen() {
 
       {pickMode ? (
         <View style={styles.banner}>
-          <Text style={styles.bannerText}>Выберите точку на карте</Text>
+          <Text style={styles.bannerText}>Select a point on the map</Text>
           <Pressable hitSlop={8} onPress={() => setPickMode(false)}>
-            <Text style={styles.bannerCancel}>Отмена</Text>
+            <Text style={styles.bannerCancel}>Cancel</Text>
           </Pressable>
         </View>
       ) : null}
@@ -163,7 +163,7 @@ export default function MapScreen() {
           style={styles.zoomBtn}
           onPress={() => mapRef.current?.adjustZoom(1)}
           accessibilityRole="button"
-          accessibilityLabel="Приблизить карту"
+          accessibilityLabel="Zoom in map"
         >
           <Text style={styles.zoomBtnText}>＋</Text>
         </Pressable>
@@ -171,7 +171,7 @@ export default function MapScreen() {
           style={styles.zoomBtn}
           onPress={() => mapRef.current?.adjustZoom(-1)}
           accessibilityRole="button"
-          accessibilityLabel="Отдалить карту"
+          accessibilityLabel="Zoom out map"
         >
           <Text style={styles.zoomBtnText}>−</Text>
         </Pressable>
@@ -188,16 +188,16 @@ export default function MapScreen() {
       <Modal visible={recOpen} transparent animationType="slide">
         <Pressable style={styles.modalBackdrop} onPress={() => setRecOpen(false)}>
           <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.sheetTitle}>Куда поехать?</Text>
+            <Text style={styles.sheetTitle}>Where to go?</Text>
             <Text style={styles.sheetBody}>{rec?.reason ?? ''}</Text>
             {rec?.suggested_bait ? (
-              <Text style={styles.sheetMeta}>Наживка: {rec.suggested_bait}</Text>
+              <Text style={styles.sheetMeta}>Bait: {rec.suggested_bait}</Text>
             ) : null}
             {rec?.suggested_species ? (
-              <Text style={styles.sheetMeta}>Рыба: {rec.suggested_species}</Text>
+              <Text style={styles.sheetMeta}>Fish: {rec.suggested_species}</Text>
             ) : null}
             <Pressable style={styles.sheetClose} onPress={() => setRecOpen(false)}>
-              <Text style={styles.sheetCloseText}>Закрыть</Text>
+              <Text style={styles.sheetCloseText}>Close</Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -207,7 +207,7 @@ export default function MapScreen() {
 }
 
 const styles = StyleSheet.create({
-  /** Без minHeight: 100vh на web — иначе блок выше слота вкладки, absolute bottom «уезжает» под tab bar. */
+  /** Keep no minHeight: 100vh on web, otherwise absolute bottom controls slide under tab bar. */
   root: { flex: 1, width: '100%', backgroundColor: colors.bg },
   banner: {
     position: 'absolute',

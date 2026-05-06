@@ -1,30 +1,30 @@
 import type { Session, User } from '@supabase/supabase-js';
 
 /**
- * После signUp при включённом «Confirm email» в Supabase сессии нет, пока пользователь не подтвердил почту.
+ * After signUp, when Supabase "Confirm email" is enabled, there is no session until the email is confirmed.
  */
 export function signUpNeedsEmailConfirmation(user: User | null, session: Session | null): boolean {
   return Boolean(user && !session);
 }
 
-/** Человекочитаемые сообщения для типичных ошибок Supabase Auth */
+/** Human-readable messages for common Supabase Auth errors. */
 export function formatAuthError(err: unknown): string {
   if (err instanceof Error) {
     const m = err.message;
-    if (/invalid login credentials/i.test(m)) return 'Неверный email или пароль.';
-    if (/email not confirmed/i.test(m)) return 'Сначала подтвердите email по ссылке из письма.';
+    if (/invalid login credentials/i.test(m)) return 'Invalid email or password.';
+    if (/email not confirmed/i.test(m)) return 'Please confirm your email using the link from the message.';
     if (/user already registered|already been registered|already exists/i.test(m)) {
-      return 'Этот email уже зарегистрирован. Войдите или восстановите пароль.';
+      return 'This email is already registered. Sign in or reset password.';
     }
     if (/password/i.test(m) && /short|least|weak|characters/i.test(m)) {
-      return 'Пароль не проходит политику безопасности проекта (длина/сложность).';
+      return 'Password does not meet project security policy (length/complexity).';
     }
     if (/signup.*disabled|signups not allowed|registration.*disabled/i.test(m)) {
-      return 'Регистрация отключена в настройках Supabase Auth.';
+      return 'Sign-up is disabled in Supabase Auth settings.';
     }
-    if (/invalid email/i.test(m)) return 'Некорректный email.';
-    if (/rate limit|too many requests/i.test(m)) return 'Слишком много попыток. Подождите немного.';
-    if (/fetch failed|network/i.test(m)) return 'Нет сети или недоступен Supabase. Проверьте URL и ключ в .env.';
+    if (/invalid email/i.test(m)) return 'Invalid email.';
+    if (/rate limit|too many requests/i.test(m)) return 'Too many attempts. Please wait a bit.';
+    if (/fetch failed|network/i.test(m)) return 'No network or Supabase is unavailable. Check URL and key in .env.';
     return m;
   }
   return String(err);

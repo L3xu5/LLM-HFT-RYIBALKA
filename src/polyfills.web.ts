@@ -1,6 +1,6 @@
 /**
- * RN Web / Safari: часть кода Яндекс.Карт обращается к глобальному `TouchEvent`.
- * Без заглушки — ReferenceError и пустая карта.
+ * RN Web / Safari: part of Yandex Maps code reads global `TouchEvent`.
+ * Without this shim you get ReferenceError and an empty map.
  */
 const w = typeof window !== 'undefined' ? (window as unknown as { TouchEvent?: typeof MouseEvent }) : null;
 if (w && typeof w.TouchEvent === 'undefined') {

@@ -36,7 +36,7 @@ export default function RootLayout() {
                   options={{
                     presentation: 'modal',
                     headerShown: true,
-                    title: 'Новый улов',
+                    title: 'New catch',
                     headerStyle: { backgroundColor: colors.surface },
                     headerTintColor: colors.text,
                     headerShadowVisible: false,
@@ -46,7 +46,7 @@ export default function RootLayout() {
                   name="catch/[id]"
                   options={{
                     headerShown: true,
-                    title: 'Улов',
+                    title: 'Catch',
                     headerStyle: { backgroundColor: colors.surface },
                     headerTintColor: colors.text,
                     headerShadowVisible: false,

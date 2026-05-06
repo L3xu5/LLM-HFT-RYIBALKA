@@ -32,7 +32,7 @@ export default function CatchDetailScreen() {
 
   const [editing, setEditing] = useState(false);
   const [newPhotos, setNewPhotos] = useState<string[]>([]);
-  /** Подписанные URL поверх публичных (если удалось получить). */
+  /** Signed URLs override public URLs when available. */
   const [signedPhotoUrls, setSignedPhotoUrls] = useState<Record<string, string>>({});
 
   const query = useQuery({
@@ -102,7 +102,7 @@ export default function CatchDetailScreen() {
       const weightRaw = values.weight_g?.trim();
       const weight = weightRaw ? Number(weightRaw) : null;
       if (weight !== null && (!Number.isFinite(weight) || weight < 0)) {
-        throw new Error('Некорректный вес');
+        throw new Error('Invalid weight');
       }
 
       await updateCatch(id, {
@@ -123,9 +123,9 @@ export default function CatchDetailScreen() {
       await qc.invalidateQueries({ queryKey: queryKeys.catches });
       setNewPhotos([]);
       setEditing(false);
-      Alert.alert('Сохранено');
+      Alert.alert('Saved');
     },
-    onError: (e) => Alert.alert('Ошибка', e instanceof Error ? e.message : String(e)),
+    onError: (e) => Alert.alert('Error', e instanceof Error ? e.message : String(e)),
   });
 
   const deleteMutation = useMutation({
@@ -134,7 +134,7 @@ export default function CatchDetailScreen() {
       await qc.invalidateQueries({ queryKey: queryKeys.catches });
       router.replace('/(tabs)/map');
     },
-    onError: (e) => Alert.alert('Ошибка', e instanceof Error ? e.message : String(e)),
+    onError: (e) => Alert.alert('Error', e instanceof Error ? e.message : String(e)),
   });
 
   async function pickMorePhotos() {
@@ -150,16 +150,16 @@ export default function CatchDetailScreen() {
   }
 
   function confirmDelete() {
-    Alert.alert('Удалить улов?', 'Это действие нельзя отменить.', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Удалить', style: 'destructive', onPress: () => deleteMutation.mutate() },
+    Alert.alert('Delete catch?', 'This action cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate() },
     ]);
   }
 
   if (query.isLoading) {
     return (
       <Screen>
-        <Text style={styles.muted}>Загрузка…</Text>
+        <Text style={styles.muted}>Loading…</Text>
       </Screen>
     );
   }
@@ -167,8 +167,8 @@ export default function CatchDetailScreen() {
   if (!query.data) {
     return (
       <Screen>
-        <Text style={styles.muted}>Улов не найден</Text>
-        <PrimaryButton title="Назад" onPress={() => router.back()} />
+        <Text style={styles.muted}>Catch not found</Text>
+        <PrimaryButton title="Back" onPress={() => router.back()} />
       </Screen>
     );
   }
@@ -178,9 +178,9 @@ export default function CatchDetailScreen() {
   return (
     <Screen edges={['bottom']} padded={false}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.title}>{c.fish_species?.trim() ? c.fish_species : 'Улов'}</Text>
+        <Text style={styles.title}>{c.fish_species?.trim() ? c.fish_species : 'Catch'}</Text>
         <Text style={styles.meta}>
-          {c.author_name ?? 'Рыбак'} · {new Date(c.caught_at).toLocaleString('ru-RU')}
+          {c.author_name ?? 'Angler'} · {new Date(c.caught_at).toLocaleString('en-US')}
         </Text>
         <Text style={styles.meta}>
           {c.lat.toFixed(5)}, {c.lng.toFixed(5)}
@@ -188,11 +188,11 @@ export default function CatchDetailScreen() {
 
         {!editing ? (
           <View style={styles.card}>
-            <Row label="Вес" value={c.weight_g != null ? `${c.weight_g} г` : '—'} />
-            <Row label="Наживка" value={c.bait ?? '—'} />
-            <Row label="Снасть" value={c.gear ?? '—'} />
-            <Row label="Заметки" value={c.notes ?? '—'} />
-            <Row label="Видимость" value={c.is_public ? 'Публичная' : 'Приватная'} />
+            <Row label="Weight" value={c.weight_g != null ? `${c.weight_g} g` : '—'} />
+            <Row label="Bait" value={c.bait ?? '—'} />
+            <Row label="Gear" value={c.gear ?? '—'} />
+            <Row label="Notes" value={c.notes ?? '—'} />
+            <Row label="Visibility" value={c.is_public ? 'Public' : 'Private'} />
           </View>
         ) : (
           <View style={styles.form}>
@@ -200,28 +200,28 @@ export default function CatchDetailScreen() {
               control={control}
               name="fish_species"
               render={({ field }) => (
-                <TextField label="Вид" value={field.value} onChangeText={field.onChange} />
+                <TextField label="Species" value={field.value} onChangeText={field.onChange} />
               )}
             />
             <Controller
               control={control}
               name="weight_g"
               render={({ field }) => (
-                <TextField label="Вес (граммы)" keyboardType="number-pad" value={field.value} onChangeText={field.onChange} />
+                <TextField label="Weight (grams)" keyboardType="number-pad" value={field.value} onChangeText={field.onChange} />
               )}
             />
             <Controller
               control={control}
               name="bait"
               render={({ field }) => (
-                <TextField label="Наживка / прикорм" value={field.value} onChangeText={field.onChange} />
+                <TextField label="Bait / groundbait" value={field.value} onChangeText={field.onChange} />
               )}
             />
             <Controller
               control={control}
               name="gear"
               render={({ field }) => (
-                <TextField label="Снасть" value={field.value} onChangeText={field.onChange} />
+                <TextField label="Gear" value={field.value} onChangeText={field.onChange} />
               )}
             />
             <Controller
@@ -229,7 +229,7 @@ export default function CatchDetailScreen() {
               name="notes"
               render={({ field }) => (
                 <TextField
-                  label="Заметки"
+                  label="Notes"
                   multiline
                   style={{ minHeight: 96, textAlignVertical: 'top' }}
                   value={field.value}
@@ -242,7 +242,7 @@ export default function CatchDetailScreen() {
               name="is_public"
               render={({ field }) => (
                 <View style={styles.switchRow}>
-                  <Text style={styles.switchLabel}>Публичная точка</Text>
+                  <Text style={styles.switchLabel}>Public point</Text>
                   <Switch
                     value={field.value}
                     onValueChange={field.onChange}
@@ -253,9 +253,9 @@ export default function CatchDetailScreen() {
               )}
             />
 
-            <PrimaryButton variant="ghost" title="Добавить фото" onPress={pickMorePhotos} />
+            <PrimaryButton variant="ghost" title="Add photo" onPress={pickMorePhotos} />
             {newPhotos.length > 0 ? (
-              <Text style={styles.muted}>Новых фото к загрузке: {newPhotos.length}</Text>
+              <Text style={styles.muted}>New photos to upload: {newPhotos.length}</Text>
             ) : null}
           </View>
         )}
@@ -284,17 +284,17 @@ export default function CatchDetailScreen() {
           <View style={styles.actions}>
             {!editing ? (
               <>
-                <PrimaryButton title="Редактировать" onPress={() => setEditing(true)} />
-                <PrimaryButton variant="danger" title="Удалить" onPress={confirmDelete} />
+                <PrimaryButton title="Edit" onPress={() => setEditing(true)} />
+                <PrimaryButton variant="danger" title="Delete" onPress={confirmDelete} />
               </>
             ) : (
               <>
                 <PrimaryButton
-                  title="Сохранить"
+                  title="Save"
                   loading={saveMutation.isPending}
                   onPress={handleSubmit((v) => saveMutation.mutateAsync(v))}
                 />
-                <PrimaryButton variant="ghost" title="Отмена" onPress={() => setEditing(false)} />
+                <PrimaryButton variant="ghost" title="Cancel" onPress={() => setEditing(false)} />
               </>
             )}
           </View>

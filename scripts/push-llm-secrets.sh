@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
-# Загружает секреты YandexGPT в Supabase Edge Functions (не коммитьте ключи в git).
+# Uploads YandexGPT secrets to Supabase Edge Functions (do not commit keys to git).
 #
-# Поддерживаются имена:
+# Supported names:
 #   YANDEX_GPT_API_KEY / YANDEX_FOLDER_ID
-# или алиасы из Yandex Cloud:
+# or Yandex Cloud aliases:
 #   YANDEX_CLOUD_API_KEY / YANDEX_CLOUD_FOLDER
 #
-# Опционально модель:
+# Optional model:
 #   YANDEX_CLOUD_MODEL=yandexgpt-5.1/latest
-# или полный URI:
+# or full URI:
 #   YANDEX_MODEL_URI=gpt://b1g.../yandexgpt-5.1/latest
 #
-# Нужен Supabase CLI и доступ к проекту:
-#   export SUPABASE_ACCESS_TOKEN='sbp_…'  (или supabase login + link)
+# Requires Supabase CLI and project access:
+#   export SUPABASE_ACCESS_TOKEN='sbp_…'  (or supabase login + link)
 #   npm run llm:secrets
 #
-# Ключ API и folder id: Yandex Cloud → каталог → сервисные аккаунты / API-ключ
-# для Foundation Models (LLM), folder id вида b1g...
+# API key and folder id: Yandex Cloud -> folder -> service accounts / API key
+# for Foundation Models (LLM), folder id looks like b1g...
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
@@ -36,17 +36,17 @@ MODEL_URI="${YANDEX_MODEL_URI:-${YANDEX_CLOUD_MODEL_URI:-}}"
 MODEL_TAIL="${YANDEX_CLOUD_MODEL:-}"
 
 if [[ -z "$API_KEY" || -z "$FOLDER" ]]; then
-  echo "Нет ключей Yandex Cloud для загрузки в Supabase." >&2
-  echo "Задайте в консоли (или в .env без коммита):" >&2
-  echo "  export YANDEX_GPT_API_KEY='AQVN…'   # API-ключ с доступом к Foundation Models" >&2
-  echo "  export YANDEX_FOLDER_ID='b1g…'     # ID каталога в Yandex Cloud" >&2
-  echo "Опционально: export YANDEX_CLOUD_MODEL='yandexgpt-5.1/latest'" >&2
-  echo "Затем снова: npm run llm:secrets" >&2
+  echo "Yandex Cloud keys are missing for Supabase upload." >&2
+  echo "Set these in your shell (or in non-committed .env):" >&2
+  echo "  export YANDEX_GPT_API_KEY='AQVN…'   # API key with Foundation Models access" >&2
+  echo "  export YANDEX_FOLDER_ID='b1g…'     # Folder ID in Yandex Cloud" >&2
+  echo "Optional: export YANDEX_CLOUD_MODEL='yandexgpt-5.1/latest'" >&2
+  echo "Then run again: npm run llm:secrets" >&2
   exit 1
 fi
 
 if ! command -v supabase >/dev/null 2>&1; then
-  echo "Установите CLI: brew install supabase/tap/supabase" >&2
+  echo "Install CLI: brew install supabase/tap/supabase" >&2
   exit 1
 fi
 
@@ -65,4 +65,4 @@ fi
 
 "${ARGS[@]}"
 
-echo "Секреты Yandex записаны для проекта ${PROJECT_REF}. Повторный деплой функции не обязателен — секреты подхватятся при следующем вызове."
+echo "Yandex secrets were written for project ${PROJECT_REF}. Redeploy is optional - secrets are used on next invocation."

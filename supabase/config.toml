@@ -1,7 +1,7 @@
-# Конфигурация Supabase CLI (`supabase link`, `supabase functions deploy`).
-# Полный шаблон: https://supabase.com/docs/guides/cli/config
+# Supabase CLI config (`supabase link`, `supabase functions deploy`).
+# Full template: https://supabase.com/docs/guides/cli/config
 #
-# Project ref совпадает с поддоменом EXPO_PUBLIC_SUPABASE_URL (*.supabase.co).
+# Project ref matches EXPO_PUBLIC_SUPABASE_URL subdomain (*.supabase.co).
 project_id = "cxzpcsdydsrkthlenvrj"
 
 [functions.recommend-spot]

@@ -20,7 +20,7 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
   return R * c;
 }
 
-/** Секреты: классические `YANDEX_*` или алиасы `YANDEX_CLOUD_*` из кабинета Yandex Cloud. */
+/** Secrets: classic `YANDEX_*` names or `YANDEX_CLOUD_*` aliases from Yandex Cloud. */
 function resolveYandexEnv(): { apiKey: string; folderId: string; modelUri: string } | null {
   const apiKey = (
     Deno.env.get('YANDEX_GPT_API_KEY') ??
@@ -143,31 +143,31 @@ Deno.serve(async (req) => {
       .slice(0, 140);
 
     const summaryLines = filtered.map((c) => {
-      const mine = c.user_id === user.id ? ' (мой)' : '';
-      const species = c.fish_species ? String(c.fish_species) : 'не указано';
-      const bait = c.bait ? `, наживка: ${c.bait}` : '';
-      const gear = c.gear ? `, снасть: ${c.gear}` : '';
+      const mine = c.user_id === user.id ? ' (mine)' : '';
+      const species = c.fish_species ? String(c.fish_species) : 'unspecified';
+      const bait = c.bait ? `, bait: ${c.bait}` : '';
+      const gear = c.gear ? `, tackle: ${c.gear}` : '';
       return `- ${species}${mine} @ ${c.lat.toFixed(4)}, ${c.lng.toFixed(4)} (${c.distanceKm.toFixed(
         1,
-      )}км)${bait}${gear}`;
+      )} km)${bait}${gear}`;
     });
 
     const prompt = [
-      `Центр области карты, которую смотрит пользователь: lat=${lat}, lng=${lng}.`,
-      `Радиус анализа (приблизительно видимая область карты): ${safeRadius} км.`,
+      `Center of the visible map area: lat=${lat}, lng=${lng}.`,
+      `Analysis radius (roughly the visible map area): ${safeRadius} km.`,
       '',
       summaryLines.length
-        ? 'Уловы в этом радиусе (публичные и ваши приватные):'
-        : 'В базе пока нет доступных уловов в этом радиусе — опирайся на географию региона и сезон.',
+        ? 'Catches in this radius (public plus your private records):'
+        : 'No catches are available in this radius yet; rely on regional geography and seasonality.',
       summaryLines.length ? summaryLines.join('\n') : '',
       '',
-      'Верни ТОЛЬКО JSON без Markdown по схеме:',
+      'Return ONLY JSON without Markdown using this schema:',
       '{"lat": number, "lng": number, "reason": string, "suggested_bait": string | null, "suggested_species": string | null}',
       '',
-      'Требования:',
-      `- lat/lng: реалистичная точка у воды в пределах этой видимой области (ориентир ~${safeRadius} км от центра экрана карты).`,
-      '- Если данных мало — всё равно предложи координаты и честно объясни допущения.',
-      '- reason: 3-7 предложений по-русски.',
+      'Requirements:',
+      `- lat/lng: a realistic point near water inside the visible area (roughly ~${safeRadius} km from the map center).`,
+      '- If data is sparse, still propose coordinates and clearly explain assumptions.',
+      '- reason: 3-7 sentences in English.',
     ].join('\n');
 
     const yx = resolveYandexEnv();
@@ -175,7 +175,7 @@ Deno.serve(async (req) => {
       return json(
         {
           error:
-            'Нет ключей YandexGPT: задайте supabase secrets для YANDEX_GPT_API_KEY + YANDEX_FOLDER_ID (или YANDEX_CLOUD_API_KEY + YANDEX_CLOUD_FOLDER), опционально YANDEX_CLOUD_MODEL или YANDEX_MODEL_URI.',
+            'YandexGPT keys are missing: set supabase secrets for YANDEX_GPT_API_KEY + YANDEX_FOLDER_ID (or YANDEX_CLOUD_API_KEY + YANDEX_CLOUD_FOLDER), optionally YANDEX_CLOUD_MODEL or YANDEX_MODEL_URI.',
         },
         500,
       );
@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
           messages: [
             {
               role: 'system',
-              text: 'Ты эксперт по рыбалке. Отвечай строго одним JSON-объектом без Markdown и без текста вокруг.',
+              text: 'You are a fishing expert. Reply strictly with a single JSON object, without Markdown or extra text.',
             },
             { role: 'user', text: prompt },
           ],
@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
 
     if (!String(text).trim()) {
       return json(
-        { error: `Пустой ответ модели (проверьте YANDEX_MODEL_URI и доступ к Foundation Models): ${rawCompletion.slice(0, 1200)}` },
+        { error: `Empty model response (check YANDEX_MODEL_URI and Foundation Models access): ${rawCompletion.slice(0, 1200)}` },
         502,
       );
     }

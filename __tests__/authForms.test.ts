@@ -1,33 +1,33 @@
 import { signInSchema, signUpSchema } from '@/lib/authForms';
 
 describe('signInSchema', () => {
-  it('принимает валидные данные', () => {
+  it('accepts valid data', () => {
     expect(
       signInSchema.safeParse({ email: 'a@test.ru', password: '12345678' }).success,
     ).toBe(true);
   });
 
-  it('отклоняет короткий пароль', () => {
+  it('rejects a short password', () => {
     expect(signInSchema.safeParse({ email: 'a@test.ru', password: 'short' }).success).toBe(false);
   });
 
-  it('отклоняет невалидный email', () => {
+  it('rejects an invalid email', () => {
     expect(signInSchema.safeParse({ email: 'bad', password: '12345678' }).success).toBe(false);
   });
 });
 
 describe('signUpSchema', () => {
-  it('принимает валидные данные', () => {
+  it('accepts valid data', () => {
     expect(
       signUpSchema.safeParse({
-        displayName: 'Иван',
+        displayName: 'Ivan',
         email: 'ivan@test.ru',
         password: '12345678',
       }).success,
     ).toBe(true);
   });
 
-  it('разрешает пустое имя', () => {
+  it('allows an empty name', () => {
     expect(
       signUpSchema.safeParse({
         displayName: '',
@@ -37,7 +37,7 @@ describe('signUpSchema', () => {
     ).toBe(true);
   });
 
-  it('после trim пустое имя из пробелов допустимо', () => {
+  it('allows whitespace-only name after trim', () => {
     expect(
       signUpSchema.safeParse({
         displayName: '   ',
@@ -47,27 +47,27 @@ describe('signUpSchema', () => {
     ).toBe(true);
   });
 
-  it('отклоняет одну букву в имени', () => {
+  it('rejects a one-letter name', () => {
     expect(
       signUpSchema.safeParse({
-        displayName: 'Я',
+        displayName: 'A',
         email: 'a@test.ru',
         password: '12345678',
       }).success,
     ).toBe(false);
   });
 
-  it('отклоняет короткий пароль', () => {
+  it('rejects a short password', () => {
     expect(
       signUpSchema.safeParse({
-        displayName: 'Иван',
+        displayName: 'Ivan',
         email: 'a@test.ru',
         password: '1234567',
       }).success,
     ).toBe(false);
   });
 
-  it('нормализует email в нижний регистр', () => {
+  it('normalizes email to lowercase', () => {
     const r = signUpSchema.safeParse({
       displayName: '',
       email: ' User@Test.RU ',

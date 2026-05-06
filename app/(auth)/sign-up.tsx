@@ -29,9 +29,9 @@ export default function SignUpScreen() {
 
       if (result.needsEmailConfirmation) {
         Alert.alert(
-          'Подтвердите email',
-          'На ваш адрес отправлено письмо со ссылкой. После подтверждения нажмите «Войти». Проверьте и спам.',
-          [{ text: 'К входу', onPress: () => router.replace('/(auth)/sign-in') }],
+          'Confirm your email',
+          'We sent a confirmation link to your inbox. After confirming, tap "Sign in". Also check your spam folder.',
+          [{ text: 'Go to sign in', onPress: () => router.replace('/(auth)/sign-in') }],
         );
         return;
       }
@@ -41,7 +41,7 @@ export default function SignUpScreen() {
       if (__DEV__) {
         console.warn('[signUp]', e);
       }
-      Alert.alert('Не удалось зарегистрироваться', formatAuthError(e));
+      Alert.alert('Sign-up failed', formatAuthError(e));
     }
   }
 
@@ -51,8 +51,8 @@ export default function SignUpScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Регистрация</Text>
-          <Text style={styles.subtitle}>Создайте аккаунт рыболова</Text>
+          <Text style={styles.title}>Create account</Text>
+          <Text style={styles.subtitle}>Set up your angler profile</Text>
         </View>
 
         <View style={styles.form}>
@@ -61,8 +61,8 @@ export default function SignUpScreen() {
             name="displayName"
             render={({ field }) => (
               <TextField
-                label="Имя (необязательно)"
-                placeholder="Можно оставить пустым"
+                label="Name (optional)"
+                placeholder="You can leave this empty"
                 value={field.value}
                 onChangeText={field.onChange}
                 error={errors.displayName?.message}
@@ -89,7 +89,7 @@ export default function SignUpScreen() {
             name="password"
             render={({ field }) => (
               <TextField
-                label="Пароль"
+                label="Password"
                 secureTextEntry
                 autoCapitalize="none"
                 value={field.value}
@@ -100,15 +100,15 @@ export default function SignUpScreen() {
           />
 
           <PrimaryButton
-            title="Создать аккаунт"
+            title="Create account"
             loading={isSubmitting}
             onPress={handleSubmit(onSubmit)}
           />
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Уже есть аккаунт?</Text>
+            <Text style={styles.footerText}>Already have an account?</Text>
             <Link href="/(auth)/sign-in" style={styles.link}>
-              Войти
+              Sign in
             </Link>
           </View>
         </View>

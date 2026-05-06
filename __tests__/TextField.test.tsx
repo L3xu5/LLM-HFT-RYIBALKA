@@ -3,15 +3,15 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { TextField } from '@/components/TextField';
 
 describe('TextField', () => {
-  it('отображает ошибку', () => {
+  it('renders error text', () => {
     const onChange = jest.fn();
-    render(<TextField label="Email" value="" onChangeText={onChange} error="Ошибка поля" />);
-    expect(screen.getByText('Ошибка поля')).toBeTruthy();
+    render(<TextField label="Email" value="" onChangeText={onChange} error="Field error" />);
+    expect(screen.getByText('Field error')).toBeTruthy();
   });
 
-  it('вызывает onChangeText', () => {
+  it('calls onChangeText', () => {
     const onChange = jest.fn();
-    render(<TextField testID="tf" label="Поле" value="" onChangeText={onChange} />);
+    render(<TextField testID="tf" label="Field" value="" onChangeText={onChange} />);
     fireEvent.changeText(screen.getByTestId('tf'), 'hello');
     expect(onChange).toHaveBeenCalledWith('hello');
   });

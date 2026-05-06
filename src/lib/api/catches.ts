@@ -6,7 +6,7 @@ type CatchDbRow = CatchRow & {
   catch_photos: CatchPhoto[] | null;
 };
 
-/** Вставка/обновление: FK, RLS, сессия. */
+/** Insert/update errors: FK, RLS, session. */
 function explainMutationError(err: unknown): Error {
   const e = err as { code?: string; message?: string };
   const msg = String(e?.message ?? err);
@@ -14,7 +14,7 @@ function explainMutationError(err: unknown): Error {
 
   if (code === '23503' || /foreign key constraint/i.test(msg)) {
     return new Error(
-      'Нет строки профиля для вашего аккаунта (таблица profiles). Выйдите и войдите снова или проверьте миграцию и триггер на создание профиля при регистрации.',
+      'No profile row exists for this account (profiles table). Sign out/in again or verify migration and signup profile trigger.',
     );
   }
   if (
@@ -23,16 +23,16 @@ function explainMutationError(err: unknown): Error {
     /violates row-level security/i.test(msg)
   ) {
     return new Error(
-      'Отказано в записи (RLS). Войдите в аккаунт и проверьте, что в Supabase применены политики из supabase/migrations.',
+      'Write permission denied (RLS). Sign in and ensure policies from supabase/migrations are applied in Supabase.',
     );
   }
   if (/jwt|session|invalid/i.test(msg) && /token|auth/i.test(msg)) {
-    return new Error('Сессия недействительна. Выйдите и войдите снова.');
+    return new Error('Session is invalid. Sign out and sign in again.');
   }
   return err instanceof Error ? err : new Error(msg);
 }
 
-/** PostgREST: таблица не в схеме / другой проект в URL. */
+/** PostgREST: table missing in schema or URL points to different project. */
 function explainCatchQueryError(err: unknown): Error {
   const e = err as { code?: string; message?: string };
   const msg = String(e?.message ?? err);
@@ -45,7 +45,7 @@ function explainCatchQueryError(err: unknown): Error {
     (/schema cache/i.test(msg) && /catches/i.test(msg))
   ) {
     return new Error(
-      'В проекте Supabase нет таблицы public.catches или EXPO_PUBLIC_SUPABASE_URL указывает на другой проект. Выполните: supabase link && supabase db push — либо SQL из supabase/migrations/0001_init.sql в Dashboard → SQL Editor для того же проекта.',
+      'The Supabase project has no public.catches table, or EXPO_PUBLIC_SUPABASE_URL points to another project. Run: supabase link && supabase db push, or apply SQL from supabase/migrations/0001_init.sql in Dashboard -> SQL Editor for the same project.',
     );
   }
   return err instanceof Error ? err : new Error(msg);
@@ -94,7 +94,7 @@ export type UpsertCatchInput = {
   is_public: boolean;
 };
 
-/** FK catches → profiles: если профиля нет (старый пользователь / без триггера), вставка падает. */
+/** FK catches -> profiles: insert fails if profile is missing (older user / no trigger). */
 async function ensureProfileRow(user: {
   id: string;
   email?: string | null;
@@ -108,7 +108,7 @@ async function ensureProfileRow(user: {
   const displayName =
     typeof metaName === 'string' && metaName.trim().length > 0
       ? metaName.trim()
-      : (user.email?.split('@')[0] ?? 'Рыбак');
+      : (user.email?.split('@')[0] ?? 'Angler');
 
   const { error: insErr } = await supabase.from('profiles').insert({
     id: user.id,
@@ -123,7 +123,7 @@ export async function createCatch(input: UpsertCatchInput): Promise<CatchRow> {
   const { data: userData, error: userErr } = await supabase.auth.getUser();
   if (userErr) throw explainMutationError(userErr);
   const user = userData.user;
-  if (!user) throw new Error('Не авторизован');
+  if (!user) throw new Error('Not authenticated');
 
   await ensureProfileRow(user);
 
@@ -178,7 +178,7 @@ export async function uploadCatchPhotos(catchId: string, uris: string[]): Promis
   const { data: userData, error: userErr } = await supabase.auth.getUser();
   if (userErr) throw userErr;
   const user = userData.user;
-  if (!user) throw new Error('Не авторизован');
+  if (!user) throw new Error('Not authenticated');
 
   const inserted: CatchPhoto[] = [];
 
@@ -215,8 +215,8 @@ export function publicPhotoUrl(storagePath: string): string {
 }
 
 /**
- * Публичные URL для объектов в bucket `catch-photos` (в миграции bucket public).
- * Используйте сразу для отображения; подписанный URL — опциональное улучшение для приватного bucket.
+ * Public URLs for objects in `catch-photos` bucket (bucket is public in migration).
+ * Use directly for rendering; signed URL is an optional enhancement for private buckets.
  */
 export function resolveCatchPhotoPublicUrls(
   photos: Pick<CatchPhoto, 'id' | 'storage_path'>[],
@@ -231,8 +231,8 @@ export function resolveCatchPhotoPublicUrls(
 }
 
 /**
- * Подписанные URL (на случай приватного bucket или расширенных ограничений).
- * Никогда не бросает: ошибки по одному файлу не отменяют остальные.
+ * Signed URLs (for private buckets or stricter access rules).
+ * Never throws: failure for one file does not block others.
  */
 export async function resolveCatchPhotoSignedUrls(
   photos: Pick<CatchPhoto, 'id' | 'storage_path'>[],
@@ -246,7 +246,7 @@ export async function resolveCatchPhotoSignedUrls(
         const { data, error } = await supabase.storage.from('catch-photos').createSignedUrl(raw, 3600);
         if (!error && data?.signedUrl) out[p.id] = data.signedUrl;
       } catch {
-        /* остаёмся на publicPhotoUrl из resolveCatchPhotoPublicUrls */
+        /* keep publicPhotoUrl from resolveCatchPhotoPublicUrls */
       }
     }),
   );

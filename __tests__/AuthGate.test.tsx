@@ -23,7 +23,7 @@ describe('AuthGate', () => {
     mockSegments.mockReset();
   });
 
-  it('показывает loader пока loading=true', () => {
+  it('shows loader while loading=true', () => {
     jest.mocked(useAuth).mockReturnValue({
       session: null,
       loading: true,
@@ -42,7 +42,7 @@ describe('AuthGate', () => {
     expect(queryByText('child')).toBeNull();
   });
 
-  it('редирект на sign-in если нет сессии и группа не (auth)', async () => {
+  it('redirects to sign-in if no session and group is not (auth)', async () => {
     jest.mocked(useAuth).mockReturnValue({
       session: null,
       loading: false,
@@ -61,7 +61,7 @@ describe('AuthGate', () => {
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/(auth)/sign-in'));
   });
 
-  it('редирект на карту если есть сессия и открыт экран (auth)', async () => {
+  it('redirects to map if session exists and (auth) screen is open', async () => {
     jest.mocked(useAuth).mockReturnValue({
       session: { access_token: 't' } as never,
       loading: false,
@@ -80,7 +80,7 @@ describe('AuthGate', () => {
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/(tabs)/map'));
   });
 
-  it('редирект на карту если есть сессия и segments ещё пустые (после логина)', async () => {
+  it('redirects to map if session exists and segments are still empty (after login)', async () => {
     jest.mocked(useAuth).mockReturnValue({
       session: { access_token: 't' } as never,
       loading: false,

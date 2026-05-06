@@ -14,12 +14,12 @@ describe('profile api', () => {
     mockFrom.mockReset();
   });
 
-  it('fetchProfile возвращает строку или null', async () => {
+  it('fetchProfile returns a row or null', async () => {
     mockFrom.mockReturnValue({
       select: jest.fn(() => ({
         eq: jest.fn(() => ({
           maybeSingle: jest.fn().mockResolvedValue({
-            data: { id: 'u1', display_name: 'Пётр', created_at: '' },
+            data: { id: 'u1', display_name: 'Peter', created_at: '' },
             error: null,
           }),
         })),
@@ -27,16 +27,16 @@ describe('profile api', () => {
     });
 
     const p = await fetchProfile('u1');
-    expect(p?.display_name).toBe('Пётр');
+    expect(p?.display_name).toBe('Peter');
   });
 
-  it('updateDisplayName вызывает update', async () => {
+  it('updateDisplayName calls update', async () => {
     const eq = jest.fn().mockResolvedValue({ error: null });
     mockFrom.mockReturnValue({
       update: jest.fn(() => ({ eq })),
     });
 
-    await updateDisplayName('u1', 'Новое имя');
+    await updateDisplayName('u1', 'New name');
 
     expect(mockFrom).toHaveBeenCalledWith('profiles');
     expect(eq).toHaveBeenCalledWith('id', 'u1');

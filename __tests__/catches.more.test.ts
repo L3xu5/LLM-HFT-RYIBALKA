@@ -19,12 +19,12 @@ import { supabase } from '@/lib/supabase';
 
 const mockFrom = supabase.from as jest.Mock;
 
-describe('catches api — update / public URL', () => {
+describe('catches api - update / public URL', () => {
   beforeEach(() => {
     mockFrom.mockReset();
   });
 
-  it('updateCatch вызывает update→eq→select→single', async () => {
+  it('updateCatch calls update->eq->select->single', async () => {
     mockFrom.mockReturnValue({
       update: jest.fn(() => ({
         eq: jest.fn(() => ({
@@ -35,7 +35,7 @@ describe('catches api — update / public URL', () => {
                 user_id: 'u1',
                 lat: 1,
                 lng: 2,
-                fish_species: 'щука',
+                fish_species: 'pike',
                 weight_g: null,
                 bait: null,
                 gear: null,
@@ -51,8 +51,8 @@ describe('catches api — update / public URL', () => {
       })),
     });
 
-    const row = await updateCatch('c1', { fish_species: 'щука' });
-    expect(row.fish_species).toBe('щука');
+    const row = await updateCatch('c1', { fish_species: 'pike' });
+    expect(row.fish_species).toBe('pike');
     expect(mockFrom).toHaveBeenCalledWith('catches');
   });
 

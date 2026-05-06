@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 
 import { env } from './env';
 
-/** На web PKCE + AsyncStorage иногда даёт сбои signup/signIn; на нативе PKCE предпочтителен. */
+/** On web, PKCE + AsyncStorage can break signUp/signIn; on native PKCE remains preferable. */
 const isWeb = Platform.OS === 'web';
 
 export const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {

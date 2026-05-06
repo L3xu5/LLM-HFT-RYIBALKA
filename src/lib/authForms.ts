@@ -3,29 +3,29 @@ import { z } from 'zod';
 const emailField = z
   .string()
   .trim()
-  .min(1, 'Введите email')
-  .email('Некорректный email')
+  .min(1, 'Enter email')
+  .email('Invalid email')
   .transform((s) => s.toLowerCase());
 
 const passwordField = z
   .string()
-  .min(8, 'Минимум 8 символов (как в политике Supabase)')
-  .max(72, 'Пароль не длиннее 72 символов (ограничение хранения)');
+  .min(8, 'Minimum 8 characters (matches common Supabase policy)')
+  .max(72, 'Password must be at most 72 characters (storage limit)');
 
-/** Общие правила форм входа / регистрации (пароль ≥8 часто совпадает с политикой Supabase). */
+/** Shared rules for sign-in / sign-up forms (password >=8 often matches Supabase policy). */
 export const signInSchema = z.object({
   email: emailField,
   password: passwordField,
 });
 
-/** Имя необязательно: пусто или от 2 символов после trim (пробелы не считаются). */
+/** Display name is optional: empty or at least 2 chars after trim (spaces only do not count). */
 export const signUpSchema = z.object({
   displayName: z
     .string()
     .trim()
-    .max(40, 'Максимум 40 символов')
+    .max(40, 'Maximum 40 characters')
     .refine((s) => s.length === 0 || s.length >= 2, {
-      message: 'Имя: минимум 2 символа или оставьте поле пустым',
+      message: 'Display name: at least 2 characters or leave empty',
     }),
   email: emailField,
   password: passwordField,

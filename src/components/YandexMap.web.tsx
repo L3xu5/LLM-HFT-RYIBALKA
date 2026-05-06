@@ -25,8 +25,8 @@ function finiteDim(n: unknown, fallback: number): number {
 }
 
 /**
- * Как в нативном WebView: скрипт api-maps грузится **внутри iframe** (`useParentWindowApi: false`).
- * Вариант с `parent.ymaps3` ломается в браузерах (srcdoc / sandbox / порядок загрузки).
+ * Like native WebView: load api-maps script **inside iframe** (`useParentWindowApi: false`).
+ * `parent.ymaps3` mode is fragile in browsers (srcdoc / sandbox / load ordering).
  */
 export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
   { markers, pickMode = false, onReady, onMarkerPress, onMapPress, onBridgeError },
@@ -42,7 +42,7 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
     setLayoutBox((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
   }, []);
 
-  /** На web вкладка ниже хедера; вычитаем типичную высоту tab bar, если layout ещё не пришёл. */
+  /** On web tabs are below the header; subtract a typical tab bar height if layout is not ready yet. */
   const tabBarGuess = 56;
   const innerW =
     typeof window !== 'undefined' ? window.innerWidth : 375;
@@ -112,7 +112,7 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
       getViewport() {
         return new Promise<MapViewport>((resolve, reject) => {
           const prev = viewportPendingRef.current;
-          if (prev) prev.reject(new Error('Запрос вида карты прерван'));
+          if (prev) prev.reject(new Error('Map viewport request was interrupted'));
           viewportPendingRef.current = { resolve, reject };
           if (viewportTimerRef.current) clearTimeout(viewportTimerRef.current);
           viewportTimerRef.current = setTimeout(() => {
@@ -120,7 +120,7 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
             const p = viewportPendingRef.current;
             if (p) {
               viewportPendingRef.current = null;
-              p.reject(new Error('Карта не ответила'));
+              p.reject(new Error('Map did not respond'));
             }
           }, 4000);
           inject({ action: 'getViewport' });
@@ -151,7 +151,7 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
           viewportPendingRef.current = null;
           if (!p) return;
           if (data.ok === false || typeof data.lat !== 'number' || typeof data.lng !== 'number') {
-            p.reject(new Error('Карта ещё не готова'));
+            p.reject(new Error('Map is not ready yet'));
             return;
           }
           const zm =
@@ -165,7 +165,7 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
             readyCallbackFiredRef.current = true;
             onReady?.();
           }
-          /** Повторный ready после перезагрузки iframe: иначе маркеры не уходят в новый документ. */
+          /** Handle repeated ready after iframe reload, otherwise markers stay in the old document. */
           pushMarkers();
           inject({ action: 'setPickMode', enabled: pickMode });
           return;

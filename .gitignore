@@ -6,7 +6,7 @@ web-build/
 *.log
 *.tsbuildinfo
 
-# Supabase CLI cache (локально)
+# Supabase CLI cache (local)
 supabase/.temp/
 
 # Env
@@ -14,7 +14,7 @@ supabase/.temp/
 supabase/.secrets.env
 .env.local
 .env.*.local
-# Expo CI token (локально; GitHub — Secrets)
+# Expo CI token (local; use GitHub Secrets for CI)
 .env.eas
 
 # OS

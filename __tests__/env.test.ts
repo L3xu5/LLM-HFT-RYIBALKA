@@ -1,5 +1,5 @@
 describe('env', () => {
-  it('бросает если нет переменных в expo extra', () => {
+  it('throws when variables are missing in expo extra', () => {
     jest.isolateModules(() => {
       jest.doMock('expo-constants', () => ({
         __esModule: true,
@@ -11,7 +11,7 @@ describe('env', () => {
     });
   });
 
-  it('читает значения из expo extra', () => {
+  it('reads values from expo extra', () => {
     jest.isolateModules(() => {
       jest.doMock('expo-constants', () => ({
         __esModule: true,

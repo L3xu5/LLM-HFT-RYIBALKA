@@ -1,21 +1,21 @@
-# Релизные артефакты: статический web (dist/) + нативные сборки через EAS (облако Expo).
-# Требуются секреты репозитория — см. README раздел «CI/CD».
-# iOS в CI по умолчанию выключен (нет интерактива для Apple).
-# Включение: переменная репозитория EAS_IOS_ENABLED=true или ручной запуск с галкой build_ios.
+# Release artifacts: static web (dist/) + native builds via EAS (Expo cloud).
+# Repository secrets are required - see README section "CI/CD".
+# iOS in CI is disabled by default (Apple setup is not interactive).
+# Enable it with repo variable EAS_IOS_ENABLED=true or manual run with build_ios.
 name: Release
 
 on:
   workflow_dispatch:
     inputs:
       build_ios:
-        description: Запустить EAS build для iOS (нужны credentials на expo.dev)
+        description: Run EAS build for iOS (credentials on expo.dev are required)
         type: boolean
         default: false
   push:
     tags:
       - 'v*'
 
-# Имя GitHub Release / тега: push тега `v*` → этот тег; иначе (Run workflow) → `ci-<run_number>`.
+# GitHub Release / tag name: tag push `v*` -> that tag; otherwise (Run workflow) -> `ci-<run_number>`.
 env:
   RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('ci-{0}', github.run_number) }}
 
@@ -61,7 +61,7 @@ jobs:
           path: dist
           if-no-files-found: error
 
-  # Релиз GitHub: сначала web zip (не ждёт EAS). APK добавляется отдельным job после сборки (см. attach-android-apk).
+  # GitHub release: web zip first (does not wait for EAS). APK is attached by a separate job after build.
   github-release:
     name: GitHub Release (web)
     needs: build-web
@@ -107,9 +107,10 @@ jobs:
           set -euo pipefail
           gh release upload "${{ env.RELEASE_TAG }}" \
             "apk/rybalka-${{ env.RELEASE_TAG }}.apk" \
-            --clobber
+            --clobber \
+            --repo "${{ github.repository }}"
 
-  # Статика из dist/ → бакет Object Storage (AWS CLI + endpoint Yandex). Секреты — см. README.
+  # Static files from dist/ -> Object Storage bucket (AWS CLI + Yandex endpoint). See README for secrets.
   deploy-web-yandex:
     needs: build-web
     runs-on: ubuntu-latest
@@ -135,7 +136,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${YANDEX_BUCKET:-}" ] || [ -z "${AWS_ACCESS_KEY_ID:-}" ] || [ -z "${AWS_SECRET_ACCESS_KEY:-}" ]; then
-            echo "::notice::Не заданы YANDEX_STORAGE_BUCKET и/или ключи — выгрузка web в Object Storage пропущена (см. README)."
+            echo "::notice::YANDEX_STORAGE_BUCKET and/or keys are missing - web upload to Object Storage was skipped (see README)."
             exit 0
           fi
           aws s3 sync dist/ "s3://${YANDEX_BUCKET}/" \
@@ -165,11 +166,11 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${EXPO_TOKEN:-}" ]; then
-            echo "::error::Задайте секрет EXPO_TOKEN (expo.dev → Access Tokens)."
+            echo "::error::Set the EXPO_TOKEN secret (expo.dev -> Access Tokens)."
             exit 1
           fi
           OUT_APK="rybalka-${{ env.RELEASE_TAG }}.apk"
-          # JSON на stdout; лог сборки — в stderr (--json в eas-cli)
+          # JSON goes to stdout; build log goes to stderr (--json in eas-cli)
           npx eas build \
             --platform android \
             --profile production-apk \
@@ -180,14 +181,14 @@ jobs:
             > eas-android-result.json
           APK_URL=$(jq -r '.[0].artifacts.applicationArchiveUrl // empty' eas-android-result.json)
           if [ -z "$APK_URL" ] || [ "$APK_URL" = "null" ]; then
-            echo "::error::EAS не вернул applicationArchiveUrl"
+            echo "::error::EAS did not return applicationArchiveUrl"
             cat eas-android-result.json
             exit 1
           fi
           curl -fsSL "$APK_URL" -o "$OUT_APK"
           ls -la "$OUT_APK"
 
-      - name: Upload APK artifact (GitHub Release / ручные прогоны)
+      - name: Upload APK artifact (GitHub Release / manual runs)
         uses: actions/upload-artifact@v7
         with:
           name: android-apk
@@ -216,7 +217,7 @@ jobs:
           EAS_BUILD_NO_EXPO_GO_WARNING: 'true'
         run: |
           if [ -z "$EXPO_TOKEN" ]; then
-            echo "::error::Задайте секрет EXPO_TOKEN (expo.dev → Access Tokens)."
+            echo "::error::Set the EXPO_TOKEN secret (expo.dev -> Access Tokens)."
             exit 1
           fi
           npx eas build --platform ios --profile production --non-interactive --no-wait

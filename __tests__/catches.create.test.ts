@@ -20,7 +20,7 @@ describe('createCatch', () => {
     mockFrom.mockReset();
   });
 
-  it('вставляет запись в catches', async () => {
+  it('inserts a row into catches', async () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === 'profiles') {
         return {
@@ -41,7 +41,7 @@ describe('createCatch', () => {
                   user_id: 'user-1',
                   lat: 55,
                   lng: 37,
-                  fish_species: 'окунь',
+                  fish_species: 'perch',
                   weight_g: null,
                   bait: null,
                   gear: null,
@@ -63,7 +63,7 @@ describe('createCatch', () => {
       lat: 55,
       lng: 37,
       is_public: true,
-      fish_species: 'окунь',
+      fish_species: 'perch',
     });
 
     expect(row.id).toBe('c1');

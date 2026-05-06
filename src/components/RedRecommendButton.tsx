@@ -27,8 +27,8 @@ export function RedRecommendButton({ loading, disabled, style, ...rest }: Props)
         <ActivityIndicator color="#fff" />
       ) : (
         <>
-          <Text style={styles.title}>Куда поехать?</Text>
-          <Text style={styles.sub}>Спросить AI</Text>
+          <Text style={styles.title}>Where to go?</Text>
+          <Text style={styles.sub}>Ask AI</Text>
         </>
       )}
     </Pressable>

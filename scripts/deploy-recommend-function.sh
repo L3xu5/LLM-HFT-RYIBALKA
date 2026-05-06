@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Деплой Edge Function recommend-spot (нужен SUPABASE_ACCESS_TOKEN).
-# Токен: https://supabase.com/dashboard/account/tokens
-# CLI: brew install supabase/tap/supabase  ИЛИ  npm install -g supabase
+# Deploy Edge Function recommend-spot (requires SUPABASE_ACCESS_TOKEN).
+# Token: https://supabase.com/dashboard/account/tokens
+# CLI: brew install supabase/tap/supabase OR npm install -g supabase
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
@@ -16,9 +16,9 @@ fi
 PROJECT_REF="${SUPABASE_PROJECT_REF:-cxzpcsdydsrkthlenvrj}"
 
 if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
-  echo "Не задан SUPABASE_ACCESS_TOKEN." >&2
-  echo "  Локально: export SUPABASE_ACCESS_TOKEN='sbp_…' или добавьте в .env" >&2
-  echo "  Либо GitHub → Actions → «Deploy recommend-spot» (секрет SUPABASE_ACCESS_TOKEN)." >&2
+  echo "SUPABASE_ACCESS_TOKEN is not set." >&2
+  echo "  Local: export SUPABASE_ACCESS_TOKEN='sbp_…' or add it to .env" >&2
+  echo "  Or use GitHub -> Actions -> 'Deploy recommend-spot' (SUPABASE_ACCESS_TOKEN secret)." >&2
   exit 1
 fi
 
@@ -32,6 +32,6 @@ if command -v supabase >/dev/null 2>&1; then
   run_deploy supabase "$@"
 fi
 
-echo "Установите Supabase CLI: brew install supabase/tap/supabase" >&2
-echo "или: npm install -g supabase" >&2
+echo "Install Supabase CLI: brew install supabase/tap/supabase" >&2
+echo "or: npm install -g supabase" >&2
 exit 1
