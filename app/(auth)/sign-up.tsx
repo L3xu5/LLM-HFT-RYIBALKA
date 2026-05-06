@@ -8,7 +8,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { useAuth } from '@/lib/auth';
-import { extractRetryAfterSeconds, formatAuthError } from '@/lib/authHelpers';
+import { authSecondaryHint, extractRetryAfterSeconds, formatAuthError } from '@/lib/authHelpers';
 import { type SignUpValues, signUpSchema } from '@/lib/authForms';
 import { colors, spacing } from '@/lib/theme';
 
@@ -92,12 +92,9 @@ export default function SignUpScreen() {
       const msg = formatAuthError(e);
       const rawMsg = e instanceof Error ? e.message : String(e);
       setSubmitError(msg);
-      setSubmitInfo(null);
+      setSubmitInfo(authSecondaryHint(e, msg, 'signUp'));
       const alreadyRegistered = /already registered|already exists|already been registered/i.test(msg);
-      if (alreadyRegistered) {
-        setEmailAlreadyRegistered(true);
-        setSubmitInfo('This email already has an account. Use Sign in to continue.');
-      }
+      if (alreadyRegistered) setEmailAlreadyRegistered(true);
       const retryAfterSec = extractRetryAfterSeconds(rawMsg) ?? extractRetryAfterSeconds(msg);
       if (retryAfterSec !== null) {
         setCooldownUntilTs(Date.now() + retryAfterSec * 1000);
@@ -184,8 +181,8 @@ export default function SignUpScreen() {
             )}
           />
           <Text style={styles.hint}>
-            Password: 8+ characters. After submit you will see whether a confirmation email was sent and to which address.
-            If the email is already registered, you will see an explicit message — use Sign in instead.
+            Password: 8+ characters. Outcomes: confirmation email sent → check inbox/spam; email already used → Sign in;
+            weak password → follow policy hint; rate limits → wait; server/network errors → retry after connectivity/env check.
           </Text>
           {Platform.OS === 'web' ? (
             <Text style={styles.hint}>

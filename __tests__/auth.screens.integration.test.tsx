@@ -65,6 +65,22 @@ describe('Auth screens integration', () => {
     expect(Alert.alert).toHaveBeenCalledWith('Sign-in failed', 'Invalid email or password.');
   });
 
+  it('shows sign-in hint when email is not confirmed', async () => {
+    mockSignIn.mockRejectedValueOnce(new Error('Email not confirmed'));
+    const view = render(<SignInScreen />);
+
+    const inputs = view.UNSAFE_getAllByType(TextInput);
+    fireEvent.changeText(inputs[0], 'fish@example.com');
+    fireEvent.changeText(inputs[1], '12345678');
+    fireEvent(inputs[0], 'blur');
+    fireEvent(inputs[1], 'blur');
+    fireEvent(screen.getByRole('button', { name: 'Sign in' }), 'onPress');
+
+    await waitFor(() => expect(mockSignIn).toHaveBeenCalled());
+    expect(screen.getByText(/confirm your email/i)).toBeTruthy();
+    expect(screen.getByText(/exact email/i)).toBeTruthy();
+  });
+
   it('starts dynamic cooldown from security retry-after message', async () => {
     mockSignUp.mockRejectedValueOnce(
       new Error('For security purposes, you can only request this after 51 seconds.'),

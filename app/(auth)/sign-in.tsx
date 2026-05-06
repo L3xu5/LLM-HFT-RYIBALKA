@@ -8,7 +8,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { useAuth } from '@/lib/auth';
-import { formatAuthError } from '@/lib/authHelpers';
+import { authSecondaryHint, formatAuthError } from '@/lib/authHelpers';
 import { type SignInValues, signInSchema } from '@/lib/authForms';
 import { colors, spacing } from '@/lib/theme';
 
@@ -52,17 +52,7 @@ export default function SignInScreen() {
       }
       const msg = formatAuthError(e);
       setSubmitError(msg);
-      if (/confirm your email/i.test(msg)) {
-        setSubmitInfo(
-          'Your account exists, but email is not confirmed yet. Open inbox/spam, tap the confirmation link, then try Sign in again.',
-        );
-      } else if (/invalid email or password/i.test(msg)) {
-        setSubmitInfo(
-          'Wrong password or unknown email. If you already registered this email, use Sign in. To create a new account, use Create one.',
-        );
-      } else {
-        setSubmitInfo(null);
-      }
+      setSubmitInfo(authSecondaryHint(e, msg, 'signIn'));
       showAuthAlert('Sign-in failed', msg);
     }
   }
@@ -111,6 +101,10 @@ export default function SignInScreen() {
             )}
           />
           <Text style={styles.hint}>Use the same email and password as in confirmation email flow.</Text>
+          <Text style={styles.hint}>
+            Typical cases: invalid password or typo → fix or register; email not confirmed → open inbox/spam and confirm;
+            too many attempts → wait for cooldown; offline/VPN → check network and Supabase env on this build.
+          </Text>
           {Platform.OS === 'web' ? (
             <Text style={styles.hint}>
               Web note: auth messages appear inline below. If confirmation is required, check inbox and spam.
