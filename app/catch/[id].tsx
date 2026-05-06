@@ -34,6 +34,7 @@ export default function CatchDetailScreen() {
   const [editing, setEditing] = useState(false);
   const [newPhotos, setNewPhotos] = useState<string[]>([]);
   const [photoIdsToDelete, setPhotoIdsToDelete] = useState<string[]>([]);
+  const [photoAspectByKey, setPhotoAspectByKey] = useState<Record<string, number>>({});
   /** Signed URLs override public URLs when available. */
   const [signedPhotoUrls, setSignedPhotoUrls] = useState<Record<string, string>>({});
 
@@ -164,6 +165,13 @@ export default function CatchDetailScreen() {
 
   function removeNewPhoto(uri: string) {
     setNewPhotos((prev) => prev.filter((u) => u !== uri));
+  }
+
+  function rememberAspect(key: string, width: number, height: number) {
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return;
+    const ratio = width / height;
+    if (!Number.isFinite(ratio) || ratio <= 0) return;
+    setPhotoAspectByKey((prev) => (prev[key] === ratio ? prev : { ...prev, [key]: ratio }));
   }
 
   function cancelEdit() {
@@ -308,7 +316,16 @@ export default function CatchDetailScreen() {
             const uri = signedPhotoUrls[p.id] ?? publicPhotoUrls[p.id];
             return uri ? (
               <View key={p.id} style={styles.photoWrap}>
-                <Image source={{ uri }} style={styles.photo} contentFit="contain" recyclingKey={p.id} />
+                <Image
+                  source={{ uri }}
+                  style={[styles.photo, { aspectRatio: photoAspectByKey[p.id] ?? 4 / 3 }]}
+                  contentFit="contain"
+                  recyclingKey={p.id}
+                  onLoad={(e: any) => {
+                    const src = Array.isArray(e?.source) ? e.source[0] : e?.source;
+                    rememberAspect(p.id, Number(src?.width), Number(src?.height));
+                  }}
+                />
                 {editing ? (
                   <Pressable
                     style={styles.removePhotoBtn}
@@ -326,7 +343,15 @@ export default function CatchDetailScreen() {
           })}
           {newPhotos.map((uri) => (
             <View key={uri} style={styles.photoWrap}>
-              <Image source={{ uri }} style={styles.photoNew} contentFit="contain" />
+              <Image
+                source={{ uri }}
+                style={[styles.photoNew, { aspectRatio: photoAspectByKey[uri] ?? 4 / 3 }]}
+                contentFit="contain"
+                onLoad={(e: any) => {
+                  const src = Array.isArray(e?.source) ? e.source[0] : e?.source;
+                  rememberAspect(uri, Number(src?.width), Number(src?.height));
+                }}
+              />
               {editing ? (
                 <Pressable
                   style={styles.removePhotoBtn}
@@ -401,9 +426,9 @@ const styles = StyleSheet.create({
   switchLabel: { flex: 1, color: colors.text, fontWeight: '700' },
   gallery: { gap: spacing.md },
   photoWrap: { position: 'relative' },
-  photo: { width: '100%', height: 220, borderRadius: 12, backgroundColor: colors.surface },
+  photo: { width: '100%', borderRadius: 12, backgroundColor: colors.surface },
   photoPending: { backgroundColor: colors.surfaceAlt },
-  photoNew: { width: '100%', height: 220, borderRadius: 12, backgroundColor: colors.surfaceAlt },
+  photoNew: { width: '100%', borderRadius: 12, backgroundColor: colors.surfaceAlt },
   removePhotoBtn: {
     position: 'absolute',
     top: spacing.sm,

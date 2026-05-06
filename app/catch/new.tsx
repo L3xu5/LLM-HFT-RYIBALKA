@@ -25,6 +25,7 @@ export default function NewCatchScreen() {
   const coordsOk = useMemo(() => Number.isFinite(lat) && Number.isFinite(lng), [lat, lng]);
 
   const [photos, setPhotos] = useState<string[]>([]);
+  const [photoAspectByUri, setPhotoAspectByUri] = useState<Record<string, number>>({});
 
   const { control, handleSubmit } = useForm<FormValues>({
     resolver: zodResolver(catchFormSchema),
@@ -58,6 +59,13 @@ export default function NewCatchScreen() {
 
   function removePhoto(uri: string) {
     setPhotos((prev) => prev.filter((x) => x !== uri));
+  }
+
+  function rememberAspect(uri: string, width: number, height: number) {
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return;
+    const ratio = width / height;
+    if (!Number.isFinite(ratio) || ratio <= 0) return;
+    setPhotoAspectByUri((prev) => (prev[uri] === ratio ? prev : { ...prev, [uri]: ratio }));
   }
 
   const mutation = useMutation({
@@ -186,7 +194,18 @@ export default function NewCatchScreen() {
           <View style={styles.photoGrid}>
             {photos.map((uri) => (
               <Pressable key={uri} onPress={() => removePhoto(uri)} style={styles.photoWrap}>
-                <Image source={{ uri }} style={styles.photo} resizeMode="contain" />
+                <Image
+                  source={{ uri }}
+                  style={[styles.photo, { aspectRatio: photoAspectByUri[uri] ?? 4 / 3 }]}
+                  resizeMode="contain"
+                  onLoad={(e) =>
+                    rememberAspect(
+                      uri,
+                      Number(e.nativeEvent?.source?.width),
+                      Number(e.nativeEvent?.source?.height),
+                    )
+                  }
+                />
                 <Text style={styles.photoHint}>Tap to remove</Text>
               </Pressable>
             ))}
@@ -220,6 +239,6 @@ const styles = StyleSheet.create({
   switchLabel: { flex: 1, color: colors.text, fontWeight: '700' },
   photoGrid: { gap: spacing.md },
   photoWrap: { gap: spacing.xs },
-  photo: { width: '100%', height: 180, borderRadius: 12, backgroundColor: colors.surface },
+  photo: { width: '100%', borderRadius: 12, backgroundColor: colors.surface },
   photoHint: { color: colors.textMuted, fontSize: 12 },
 });
