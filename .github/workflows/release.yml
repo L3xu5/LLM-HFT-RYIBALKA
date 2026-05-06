@@ -15,6 +15,10 @@ on:
     tags:
       - 'v*'
 
+# Имя GitHub Release / тега: push тега `v*` → этот тег; иначе (Run workflow) → `ci-<run_number>`.
+env:
+  RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('ci-{0}', github.run_number) }}
+
 permissions:
   contents: write
 
@@ -61,7 +65,6 @@ jobs:
   github-release:
     name: GitHub Release (web)
     needs: build-web
-    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -73,19 +76,21 @@ jobs:
 
       - name: Pack web bundle for release
         run: |
-          (cd web-dist && zip -r "${GITHUB_WORKSPACE}/rybalka-web-${{ github.ref_name }}.zip" .)
+          (cd web-dist && zip -r "${GITHUB_WORKSPACE}/rybalka-web-${{ env.RELEASE_TAG }}.zip" .)
 
       - name: Create GitHub Release with assets
         uses: softprops/action-gh-release@v2
         with:
-          files: rybalka-web-${{ github.ref_name }}.zip
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          files: rybalka-web-${{ env.RELEASE_TAG }}.zip
           generate_release_notes: true
           fail_on_unmatched_files: true
 
   attach-android-apk:
     name: Attach APK to GitHub Release
     needs: [github-release, eas-android]
-    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -100,8 +105,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release upload "${{ github.ref_name }}" \
-            "apk/rybalka-${{ github.ref_name }}.apk" \
+          gh release upload "${{ env.RELEASE_TAG }}" \
+            "apk/rybalka-${{ env.RELEASE_TAG }}.apk" \
             --clobber
 
   # Статика из dist/ → бакет Object Storage (AWS CLI + endpoint Yandex). Секреты — см. README.
@@ -163,7 +168,7 @@ jobs:
             echo "::error::Задайте секрет EXPO_TOKEN (expo.dev → Access Tokens)."
             exit 1
           fi
-          OUT_APK="rybalka-${{ github.ref_name }}.apk"
+          OUT_APK="rybalka-${{ env.RELEASE_TAG }}.apk"
           # JSON на stdout; лог сборки — в stderr (--json в eas-cli)
           npx eas build \
             --platform android \
@@ -171,7 +176,7 @@ jobs:
             --non-interactive \
             --wait \
             --json \
-            -m "GitHub Actions ${{ github.workflow }} ${{ github.ref_name }} ${{ github.sha }}" \
+            -m "GitHub Actions ${{ github.workflow }} ${{ env.RELEASE_TAG }} ${{ github.sha }}" \
             > eas-android-result.json
           APK_URL=$(jq -r '.[0].artifacts.applicationArchiveUrl // empty' eas-android-result.json)
           if [ -z "$APK_URL" ] || [ "$APK_URL" = "null" ]; then
@@ -186,7 +191,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: android-apk
-          path: rybalka-${{ github.ref_name }}.apk
+          path: rybalka-${{ env.RELEASE_TAG }}.apk
           if-no-files-found: error
 
   eas-ios:
