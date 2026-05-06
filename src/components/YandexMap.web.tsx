@@ -229,9 +229,7 @@ export const YandexMap = forwardRef<YandexMapHandle, Props>(function YandexMap(
             borderColor: 'transparent',
             backgroundColor: colors.bg,
           }}
-          // Яндекс строго проверяет Referer по ключу (см. limit.html). В iframe со srcDoc
-          // браузер иногда не передаёт нужный заголовок при origin-when-cross-origin.
-          referrerPolicy="unsafe-url"
+          referrerPolicy="origin-when-cross-origin"
           onLoad={() => {
             const send = () => {
               try {
