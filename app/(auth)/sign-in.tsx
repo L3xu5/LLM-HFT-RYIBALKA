@@ -52,7 +52,17 @@ export default function SignInScreen() {
       }
       const msg = formatAuthError(e);
       setSubmitError(msg);
-      setSubmitInfo(null);
+      if (/confirm your email/i.test(msg)) {
+        setSubmitInfo(
+          'Your account exists, but email is not confirmed yet. Open inbox/spam, tap the confirmation link, then try Sign in again.',
+        );
+      } else if (/invalid email or password/i.test(msg)) {
+        setSubmitInfo(
+          'Wrong password or unknown email. If you already registered this email, use Sign in. To create a new account, use Create one.',
+        );
+      } else {
+        setSubmitInfo(null);
+      }
       showAuthAlert('Sign-in failed', msg);
     }
   }

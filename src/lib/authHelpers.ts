@@ -14,7 +14,7 @@ export function formatAuthError(err: unknown): string {
     if (/invalid login credentials/i.test(m)) return 'Invalid email or password.';
     if (/email not confirmed/i.test(m)) return 'Please confirm your email using the link from the message.';
     if (/user already registered|already been registered|already exists/i.test(m)) {
-      return 'This email is already registered. Sign in or reset password.';
+      return 'This email is already registered. Use Sign in. If you forgot your password, reset it in Supabase Dashboard (Authentication > Users).';
     }
     if (/password/i.test(m) && /short|least|weak|characters/i.test(m)) {
       return 'Password does not meet project security policy (length/complexity).';

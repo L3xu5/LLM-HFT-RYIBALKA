@@ -22,6 +22,8 @@ export default function SignUpScreen() {
   const { signUp } = useAuth();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitInfo, setSubmitInfo] = useState<string | null>(null);
+  const [sentToEmail, setSentToEmail] = useState<string | null>(null);
+  const [emailAlreadyRegistered, setEmailAlreadyRegistered] = useState(false);
   const [cooldownUntilTs, setCooldownUntilTs] = useState<number>(0);
   const [cooldownNow, setCooldownNow] = useState<number>(Date.now());
   const {
@@ -50,6 +52,8 @@ export default function SignUpScreen() {
   useEffect(() => {
     if (submitError) setSubmitError(null);
     if (submitInfo) setSubmitInfo(null);
+    if (sentToEmail) setSentToEmail(null);
+    if (emailAlreadyRegistered) setEmailAlreadyRegistered(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [displayNameValue, emailValue, passwordValue, confirmPasswordValue]);
 
@@ -57,18 +61,21 @@ export default function SignUpScreen() {
     try {
       if (inCooldown) return;
       setSubmitError(null);
+      setEmailAlreadyRegistered(false);
+      setSentToEmail(null);
       setSubmitInfo('Creating account…');
-      const result = await signUp(values.email.trim(), values.password, values.displayName.trim());
+      const cleanEmail = values.email.trim().toLowerCase();
+      const result = await signUp(cleanEmail, values.password, values.displayName.trim());
 
       if (result.needsEmailConfirmation) {
+        setSentToEmail(cleanEmail);
         setSubmitInfo(
-          'Confirmation email sent. Check inbox/spam, then use Sign in.',
+          'Confirmation email sent. Open inbox and spam/junk, confirm the email, then sign in.',
         );
         const confirmMsg =
           'We sent a confirmation link to your inbox. After confirming, tap "Sign in". Also check your spam folder.';
         if (Platform.OS === 'web' && typeof window !== 'undefined') {
           showAuthAlert('Confirm your email', confirmMsg);
-          router.replace('/(auth)/sign-in');
         } else {
           Alert.alert('Confirm your email', confirmMsg, [
             { text: 'Go to sign in', onPress: () => router.replace('/(auth)/sign-in') },
@@ -86,6 +93,11 @@ export default function SignUpScreen() {
       const rawMsg = e instanceof Error ? e.message : String(e);
       setSubmitError(msg);
       setSubmitInfo(null);
+      const alreadyRegistered = /already registered|already exists|already been registered/i.test(msg);
+      if (alreadyRegistered) {
+        setEmailAlreadyRegistered(true);
+        setSubmitInfo('This email already has an account. Use Sign in to continue.');
+      }
       const retryAfterSec = extractRetryAfterSeconds(rawMsg) ?? extractRetryAfterSeconds(msg);
       if (retryAfterSec !== null) {
         setCooldownUntilTs(Date.now() + retryAfterSec * 1000);
@@ -172,7 +184,8 @@ export default function SignUpScreen() {
             )}
           />
           <Text style={styles.hint}>
-            Password: 8+ characters. If signup is rate-limited, wait and use the link in your latest email.
+            Password: 8+ characters. After submit you will see whether a confirmation email was sent and to which address.
+            If the email is already registered, you will see an explicit message — use Sign in instead.
           </Text>
           {Platform.OS === 'web' ? (
             <Text style={styles.hint}>
@@ -182,6 +195,11 @@ export default function SignUpScreen() {
 
           {submitError ? <Text style={styles.errorBanner}>{submitError}</Text> : null}
           {submitInfo ? <Text style={styles.infoBanner}>{submitInfo}</Text> : null}
+          {sentToEmail ? (
+            <Text style={styles.infoBanner}>
+              Email sent to {sentToEmail}. If it does not arrive in 1-2 minutes, check spam/junk and then retry.
+            </Text>
+          ) : null}
           {inCooldown ? (
             <Text style={styles.cooldownBanner}>
               Too many attempts. Please wait {cooldownLeftSec}s before trying again.
@@ -194,6 +212,13 @@ export default function SignUpScreen() {
             disabled={!isValid || isSubmitting || inCooldown}
             onPress={handleSubmit(onSubmit)}
           />
+          {sentToEmail || emailAlreadyRegistered ? (
+            <PrimaryButton
+              title="Go to sign in"
+              variant="ghost"
+              onPress={() => router.replace('/(auth)/sign-in')}
+            />
+          ) : null}
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already have an account?</Text>
