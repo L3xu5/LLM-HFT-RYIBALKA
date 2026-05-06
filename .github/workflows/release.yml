@@ -57,6 +57,31 @@ jobs:
           path: dist
           if-no-files-found: error
 
+  # Релиз GitHub с ассетом web (только при push тега v* — тег = имя релиза).
+  github-release:
+    name: GitHub Release
+    needs: build-web
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download web bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: web-dist
+          path: web-dist
+
+      - name: Pack web bundle for release
+        run: |
+          (cd web-dist && zip -r "${GITHUB_WORKSPACE}/rybalka-web-${{ github.ref_name }}.zip" .)
+
+      - name: Create GitHub Release with assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: rybalka-web-${{ github.ref_name }}.zip
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+
   # Статика из dist/ → бакет Object Storage (AWS CLI + endpoint Yandex). Секреты — см. README.
   deploy-web-yandex:
     needs: build-web
