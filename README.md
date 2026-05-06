@@ -208,14 +208,14 @@ npm run llm:deploy
 | Файл | Когда запускается | Что делает |
 |------|-------------------|------------|
 | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Push и PR в `main` / `master`, при желании **Run workflow** вручную | `npm ci` → typecheck → тесты → `expo lint` |
-| [`.github/workflows/release.yml`](.github/workflows/release.yml) | Push тега `v*` или **Run workflow** вручную | Те же проверки + **lint** → **GitHub Release** (ассет `rybalka-web-<тег>.zip`) → артефакт **web-dist** → опционально **Object Storage** → **EAS Android** / **EAS iOS** ([`eas.json`](eas.json)) |
+| [`.github/workflows/release.yml`](.github/workflows/release.yml) | Push тега `v*` или **Run workflow** вручную | Те же проверки + **lint** → **GitHub Release** (`rybalka-web-<тег>.zip` + **`rybalka-<тег>.apk`** после полной EAS-сборки) → **web-dist** / **android-apk** → опционально **Object Storage** → **EAS iOS** при включении ([`eas.json`](eas.json)) |
 | [`.github/workflows/deploy-recommend-spot.yml`](.github/workflows/deploy-recommend-spot.yml) | Только вручную (**workflow_dispatch**) | Деплой Edge Function `recommend-spot` в Supabase (нужен секрет `SUPABASE_ACCESS_TOKEN`) |
 
-**Релиз на GitHub:** при **push тега `v*`** (например `v1.0.0`) job **github-release** создаёт [**GitHub Release**](https://docs.github.com/repositories/releasing-projects-on-github/about-releases) с автогенерируемыми заметками и прикрепляет архив **`rybalka-web-<тег>.zip`** (содержимое `dist/` после `expo export`). Ручной запуск **Release** без тега этот шаг **пропускает** — для полноценного релиза создайте и запушьте аннотированный тег: `git tag -a v1.0.0 -m "..." && git push origin v1.0.0`.
+**Релиз на GitHub:** при **push тега `v*`** job **github-release** создаёт [**GitHub Release**](https://docs.github.com/repositories/releasing-projects-on-github/about-releases) с автозаметками и архивом **`rybalka-web-<тег>.zip`**. После успешной **EAS**-сборки Android job **attach-android-apk** добавляет в тот же релиз файл **`rybalka-<тег>.apk`** (профиль **`production-apk`** в [`eas.json`](eas.json): как `production`, но `android.buildType: apk`). Сборка в CI **ждёт** билд на стороне Expo и качает артефакт из ответа `eas build --wait --json`. Если Android-сборка падает, релиз с **web zip** всё равно остаётся; APK просто не появится. Ручной **Release** без тега шаги релиза **пропускает**. Тег: `git tag -a v1.0.0 -m "..." && git push origin v1.0.0`.
 
 **Web (artifact):** в Job «build-web» каталог `dist` также сохраняется как artifact **web-dist** на странице запуска workflow. Если заданы секреты Object Storage (ниже), job **deploy-web-yandex** выкладывает `dist/` в бакет Яндекс.Облака через `aws s3 sync` и [`--endpoint-url` для Storage](https://cloud.yandex.ru/docs/storage/tools/aws-cli).
 
-**Нативные .apk / .ipa:** собираются на **EAS** (`eas build --no-wait`) — готовые файлы скачиваются с [expo.dev → Builds](https://expo.dev); в GitHub Release их нет, пока не добавите отдельный шаг с ожиданием и загрузкой артефакта с EAS.
+**Android .apk:** в релизе на GitHub см. выше. Дополнительно статус и артефакты всегда доступны на [expo.dev → Builds](https://expo.dev). **iOS .ipa** в GitHub Release этим workflow не прикрепляется (job **eas-ios** по-прежнему с `--no-wait`); при необходимости — отдельный шаг ожидания и выгрузки, как для Android.
 
 ### Веб в Yandex Object Storage (опционально)
 

@@ -57,9 +57,9 @@ jobs:
           path: dist
           if-no-files-found: error
 
-  # Релиз GitHub с ассетом web (только при push тега v* — тег = имя релиза).
+  # Релиз GitHub: сначала web zip (не ждёт EAS). APK добавляется отдельным job после сборки (см. attach-android-apk).
   github-release:
-    name: GitHub Release
+    name: GitHub Release (web)
     needs: build-web
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
@@ -81,6 +81,28 @@ jobs:
           files: rybalka-web-${{ github.ref_name }}.zip
           generate_release_notes: true
           fail_on_unmatched_files: true
+
+  attach-android-apk:
+    name: Attach APK to GitHub Release
+    needs: [github-release, eas-android]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Download Android APK
+        uses: actions/download-artifact@v8
+        with:
+          name: android-apk
+          path: apk
+
+      - name: Upload APK to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release upload "${{ github.ref_name }}" \
+            "apk/rybalka-${{ github.ref_name }}.apk" \
+            --clobber
 
   # Статика из dist/ → бакет Object Storage (AWS CLI + endpoint Yandex). Секреты — см. README.
   deploy-web-yandex:
@@ -119,7 +141,7 @@ jobs:
   eas-android:
     needs: quality
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -128,7 +150,7 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: EAS Build (Android)
+      - name: EAS Build (Android APK), wait and download
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
@@ -136,11 +158,36 @@ jobs:
           EXPO_PUBLIC_YANDEX_MAPS_JS_API_KEY: ${{ secrets.EXPO_PUBLIC_YANDEX_MAPS_JS_API_KEY }}
           EAS_BUILD_NO_EXPO_GO_WARNING: 'true'
         run: |
-          if [ -z "$EXPO_TOKEN" ]; then
+          set -euo pipefail
+          if [ -z "${EXPO_TOKEN:-}" ]; then
             echo "::error::Задайте секрет EXPO_TOKEN (expo.dev → Access Tokens)."
             exit 1
           fi
-          npx eas build --platform android --profile production --non-interactive --no-wait
+          OUT_APK="rybalka-${{ github.ref_name }}.apk"
+          # JSON на stdout; лог сборки — в stderr (--json в eas-cli)
+          npx eas build \
+            --platform android \
+            --profile production-apk \
+            --non-interactive \
+            --wait \
+            --json \
+            -m "GitHub Actions ${{ github.workflow }} ${{ github.ref_name }} ${{ github.sha }}" \
+            > eas-android-result.json
+          APK_URL=$(jq -r '.[0].artifacts.applicationArchiveUrl // empty' eas-android-result.json)
+          if [ -z "$APK_URL" ] || [ "$APK_URL" = "null" ]; then
+            echo "::error::EAS не вернул applicationArchiveUrl"
+            cat eas-android-result.json
+            exit 1
+          fi
+          curl -fsSL "$APK_URL" -o "$OUT_APK"
+          ls -la "$OUT_APK"
+
+      - name: Upload APK artifact (GitHub Release / ручные прогоны)
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-apk
+          path: rybalka-${{ github.ref_name }}.apk
+          if-no-files-found: error
 
   eas-ios:
     needs: quality
