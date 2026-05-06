@@ -195,7 +195,7 @@ npm run llm:deploy
 | `npm test` | Jest |
 | `npm run llm:secrets` | Загрузка секретов LLM в Supabase (после `export` ключей) |
 | `npm run llm:deploy` | Деплой Edge Function `recommend-spot` |
-| `npm run build:web` | Статический бандл для web (`dist/`), как в CI |
+| `npm run build:web` | Статический web в `dist/`; перед `expo export` подгружается корневой **`.env`** (см. `scripts/export-web.cjs`) — иначе `EXPO_PUBLIC_*` не попадут в бандл |
 | `npm run eas:init:project` | Привязка к Expo при заданном `EXPO_TOKEN` ([`scripts/eas-init.sh`](scripts/eas-init.sh)) |
 | `npm run eas:login` / `eas:whoami` | Вход и проверка аккаунта EAS CLI |
 
